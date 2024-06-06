@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parent Dashboard</title>
+    <style>
+        .child-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select a Child</h1>
+    {% for child in children %}
+        <button class="child-button" onclick="location.href='{{ url_for('manage_chores', child_id=child['id']) }}'">
+            {{ child['name'] }}
+        </button>
+    {% endfor %}
+</body>
+</html>
