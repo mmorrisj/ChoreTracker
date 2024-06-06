@@ -23,6 +23,15 @@ def initdb_command():
     init_db()
     click.echo('Initialized the database.')
 
+@app.route('/')
+def index():
+    if 'user_role' in session:
+        if session['user_role'] == 'parent':
+            return redirect(url_for('parent_dashboard'))
+        elif session['user_role'] == 'child':
+            return redirect(url_for('children_dashboard'))
+    return redirect(url_for('login'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -30,13 +39,13 @@ def login():
         password = request.form['password']  # Simplified; in a real app, use proper authentication
 
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE name = ? AND role = "parent"', (username,)).fetchone()
+        user = conn.execute('SELECT * FROM users WHERE name = ? AND role IN ("parent", "child")', (username,)).fetchone()
         conn.close()
 
         if user:
             session['user_id'] = user['id']
             session['user_role'] = user['role']
-            return redirect(url_for('parent_dashboard'))
+            return redirect(url_for('index'))
         else:
             return 'Invalid credentials'
     return render_template('login.html')
