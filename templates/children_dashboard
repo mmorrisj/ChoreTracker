@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Children Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .child-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select a Child to View Progress</h1>
+    {% for child in children %}
+        <button class="child-button" onclick="location.href='{{ url_for('progress', child_id=child['id']) }}'">
+            {{ child['name'] }}
+        </button>
+    {% endfor %}
+    <a href="{{ url_for('logout') }}">Logout</a>
+</body>
+</html>
