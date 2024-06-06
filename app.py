@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, url_for
 import sqlite3
 from datetime import date
+import click
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -16,10 +17,11 @@ def init_db():
         conn.executescript(f.read().decode('utf8'))
     conn.close()
 
-@app.route('/initdb')
-def initdb():
+@app.cli.command('initdb')
+def initdb_command():
+    """Initialize the database."""
     init_db()
-    return 'Database initialized'
+    click.echo('Initialized the database.')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -77,6 +79,40 @@ def manage_chores(child_id):
 
     conn.close()
     return render_template('manage_chores.html', child=child, chores=chores)
+
+@app.route('/progress/<int:child_id>')
+def progress(child_id):
+    conn = get_db_connection()
+    child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
+    completed_chores = conn.execute(
+        'SELECT chores.name, completed_chores.amount_earned, completed_chores.completion_date '
+        'FROM completed_chores '
+        'JOIN chores ON completed_chores.chore_id = chores.id '
+        'WHERE completed_chores.user_id = ? '
+        'ORDER BY completed_chores.completion_date DESC', 
+        (child_id,)
+    ).fetchall()
+    total_earned = conn.execute(
+        'SELECT SUM(amount_earned) AS total FROM completed_chores WHERE user_id = ?', 
+        (child_id,)
+    ).fetchone()['total']
+    conn.close()
+    return render_template('progress.html', child=child, completed_chores=completed_chores, total_earned=total_earned)
+
+@app.route('/children')
+def children_dashboard():
+    if 'user_role' not in session or session['user_role'] != 'child':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
+    conn.close()
+    return render_template('children_dashboard.html', children=children)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)
