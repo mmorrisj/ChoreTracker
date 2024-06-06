@@ -3,7 +3,7 @@ import sqlite3
 from datetime import date
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'
+app.secret_key = 'AGrove4Life'
 
 def get_db_connection():
     conn = sqlite3.connect('chore_chart.db')
