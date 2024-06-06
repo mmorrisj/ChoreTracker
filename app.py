@@ -37,13 +37,13 @@ def index():
 def login():
     if request.method == 'POST':
         username = request.form['username']
-        password = request.form['password']  # Simplified; in a real app, use proper authentication
+        password = request.form['password']
 
         conn = get_db_connection()
         user = conn.execute('SELECT * FROM users WHERE name = ? AND role IN ("parent", "child")', (username,)).fetchone()
         conn.close()
 
-        if user:
+        if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
             session['user_role'] = user['role']
             return redirect(url_for('index'))
