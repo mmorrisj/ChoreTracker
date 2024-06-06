@@ -1,7 +1,8 @@
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('child', 'parent'))
+    role TEXT NOT NULL CHECK (role IN ('child', 'parent')),
+    password TEXT NOT NULL
 );
 
 CREATE TABLE chores (
