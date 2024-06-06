@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Chores for {{ child['name'] }}</title>
+</head>
+<body>
+    <h1>Manage Chores for {{ child['name'] }}</h1>
+    <form method="post">
+        <h2>Daily Preset Chores</h2>
+        {% for chore in chores %}
+            <div>
+                <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
+                <label for="chore_{{ chore['id'] }}">{{ chore['name'] }} (${{ chore['preset_amount'] }})</label>
+            </div>
+        {% endfor %}
+        <h2>Custom Chore</h2>
+        <div>
+            <label for="custom_chore">Chore Name:</label>
+            <input type="text" name="custom_chore" id="custom_chore">
+        </div>
+        <div>
+            <label for="custom_value">Minutes Spent or Amount Earned ($):</label>
+            <input type="text" name="custom_value" id="custom_value">
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
