@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Progress for {{ child['name'] }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Progress for {{ child['name'] }}</h1>
+    <h2>Total Earned: ${{ total_earned }}</h2>
+    <h2>Completed Chores</h2>
+    <ul>
+        {% for chore in completed_chores %}
+            <li>{{ chore['name'] }} - ${{ chore['amount_earned'] }} on {{ chore['completion_date'] }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('children_dashboard') }}">Back to Dashboard</a>
+</body>
+</html>
