@@ -130,6 +130,8 @@ def manage_chores(child_id):
 
     conn = get_db_connection()
     child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
+    if not child:
+        return 'Child not found', 404
     morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
     afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
     evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
