@@ -10,7 +10,7 @@
         {% for chore in chores %}
             <div>
                 <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
-                <label for="chore_{{ chore['id'] }}">{{ chore['name'] }} (${{ chore['preset_amount'] }})</label>
+                <label for="chore_{{ chore['id'] }}">{{ chore['name'] }} ({{ chore['preset_amount'] }} minutes)</label>
             </div>
         {% endfor %}
         <h2>Custom Chore</h2>
@@ -19,8 +19,8 @@
             <input type="text" name="custom_chore" id="custom_chore">
         </div>
         <div>
-            <label for="custom_value">Minutes Spent or Amount Earned ($):</label>
-            <input type="text" name="custom_value" id="custom_value">
+            <label for="custom_minutes">Minutes Spent:</label>
+            <input type="text" name="custom_minutes" id="custom_minutes">
         </div>
         <button type="submit">Submit</button>
     </form>
