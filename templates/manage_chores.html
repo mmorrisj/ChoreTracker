@@ -2,24 +2,103 @@
 <html>
 <head>
     <title>Manage Chores for {{ child['name'] }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            width: 80%;
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        label {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        input[type="text"], input[type="number"], select {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .quick-submit, .poor-behavior {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .quick-submit button, .poor-behavior button {
+            background-color: #007bff;
+        }
+        .quick-submit button:hover, .poor-behavior button:hover {
+            background-color: #0056b3;
+        }
+        .poor-behavior button {
+            background-color: #dc3545;
+        }
+        .poor-behavior button:hover {
+            background-color: #c82333;
+        }
+    </style>
 </head>
 <body>
     <h1>Manage Chores for {{ child['name'] }}</h1>
     <form method="post">
-    <h2>Quick Submit</h2>
-    <form method="post">
-        <button type="submit" name="quick_submit" value="Act of Kindness">Act of Kindness (+$0.25)</button>
-        <button type="submit" name="quick_submit" value="Act of Kindness">Good Behavior (+$0.25)</button>
-        <button type="submit" name="quick_submit" value="5 Minute Helpfulness">5 Minute Helpfulness (+$1.00)</button>
-        <button type="submit" name="quick_submit" value="10 Minute Helpfulness">10 Minute Helpfulness (+$2.00)</button>
-        <!-- Add more quick submit buttons as needed -->
-    </form>
+        <h2>Quick Submit</h2>
+        <div class="quick-submit">
+            <button type="submit" name="quick_submit" value="Act of Kindness">Act of Kindness (+$0.25)</button>
+            <button type="submit" name="quick_submit" value="Good Behavior">Good Behavior (+$0.25)</button>
+            <button type="submit" name="quick_submit" value="5 Minute Helpfulness">5 Minute Helpfulness (+$1.00)</button>
+            <button type="submit" name="quick_submit" value="10 Minute Helpfulness">10 Minute Helpfulness (+$2.00)</button>
+            <!-- Add more quick submit buttons as needed -->
+        </div>
 
-    <h2>Poor Behavior</h2>
-    <form method="post">
-        <button type="submit" name="quick_submit" value="Bad Behavior">Bad Behavior (-$0.25)</button>
-        <button type="submit" name="quick_submit" value="Very Bad Behavior">Very Bad Behavior (-1.00)</button>
-        <!-- Add more quick submit buttons as needed -->
+        <h2>Poor Behavior</h2>
+        <div class="poor-behavior">
+            <button type="submit" name="quick_submit" value="Bad Behavior">Bad Behavior (-$0.25)</button>
+            <button type="submit" name="quick_submit" value="Very Bad Behavior">Very Bad Behavior (-$1.00)</button>
+            <!-- Add more poor behavior buttons as needed -->
+        </div>
+
         <h2>Morning Chores</h2>
         <table>
             <thead>
@@ -103,9 +182,5 @@
         </div>
         <button type="submit">Submit</button>
     </form>
-
-    
-    </form>
-    
 </body>
 </html>
