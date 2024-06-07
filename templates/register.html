@@ -4,12 +4,17 @@
     <title>Register</title>
 </head>
 <body>
-    <h1>Register as a Parent</h1>
+    <h1>Register</h1>
     <form method="post">
         <label for="username">Username:</label>
         <input type="text" name="username" id="username" required>
         <label for="password">Password:</label>
         <input type="password" name="password" id="password" required>
+        <label for="role">Role:</label>
+        <select name="role" id="role" required>
+            <option value="parent">Parent</option>
+            <option value="child">Child</option>
+        </select>
         <button type="submit">Register</button>
     </form>
     <a href="{{ url_for('login') }}">Already have an account? Login here.</a>
