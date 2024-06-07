@@ -143,12 +143,12 @@ def manage_chores(child_id):
     child = conn.execute('SELECT id, name FROM users WHERE id = ?', (child_id,)).fetchone()
     if not child:
         return 'Child not found', 404
-    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
-    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
-    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
+    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "morning"').fetchall()
+    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "afternoon"').fetchall()
+    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "evening"').fetchall()
 
     if request.method == 'POST':
-        response = {}
+        response = {'status': 'failed'}
         if 'preset_chores' in request.form:
             for chore_id in request.form.getlist('preset_chores'):
                 preset_minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
@@ -198,7 +198,9 @@ def manage_chores(child_id):
                 total_earned = 0
             earnings.append({'name': child['name'], 'total_earned': total_earned})
         conn.close()
-        return jsonify({'status': 'success', 'earnings': earnings})
+        response['status'] = 'success'
+        response['earnings'] = earnings
+        return jsonify(response)
 
     conn.close()
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
