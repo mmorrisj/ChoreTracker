@@ -1,28 +1,32 @@
+-- schema.sql
+DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('child', 'parent')),
+    role TEXT NOT NULL,
     password TEXT NOT NULL
 );
 
+DROP TABLE IF EXISTS chores;
 CREATE TABLE chores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     preset_amount REAL NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('preset', 'custom')),
-    time_of_day TEXT NOT NULL CHECK (time_of_day IN ('Morning', 'Afternoon', 'Evening', 'Any'))
+    type TEXT NOT NULL,
+    time_of_day TEXT NOT NULL
 );
 
+DROP TABLE IF EXISTS completed_chores;
 CREATE TABLE completed_chores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    chore_id INTEGER NOT NULL,
-    time_spent REAL,
-    amount_earned REAL,
+    chore_id INTEGER,
+    amount_earned REAL NOT NULL,
     completion_date DATE NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (id),
-    FOREIGN KEY (chore_id) REFERENCES chores (id)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (chore_id) REFERENCES chores(id)
 );
+
 
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Act of Kindness', 1, 'preset', 'Any');
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('5 Minute Helpfulness', 5, 'preset', 'Any');
