@@ -61,10 +61,10 @@
         var earningsChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: {{ earnings|map(attribute='name')|list }},
+                labels: {{ earnings|map(attribute='name')|list|safe }},
                 datasets: [{
                     label: 'Total Earnings ($)',
-                    data: {{ earnings|map(attribute='total_earned')|list }},
+                    data: {{ earnings|map(attribute='total_earned')|list|safe }},
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1
