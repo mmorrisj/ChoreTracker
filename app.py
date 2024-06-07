@@ -61,34 +61,6 @@ def parent_dashboard():
     conn.close()
     return render_template('parent_dashboard.html', children=children)
 
-@app.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
-def manage_chores(child_id):
-    if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('login'))
-
-    conn = get_db_connection()
-    child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
-    chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset"').fetchall()
-
-    if request.method == 'POST':
-        if 'preset_chores' in request.form:
-            for chore_id in request.form.getlist('preset_chores'):
-                amount = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
-                conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                             (child_id, chore_id, amount, date.today()))
-        if request.form.get('custom_chore') and request.form.get('custom_value'):
-            custom_chore = request.form['custom_chore']
-            custom_value = float(request.form['custom_value'])
-            conn.execute('INSERT INTO chores (name, preset_amount, type) VALUES (?, ?, "custom")', (custom_chore, custom_value))
-            custom_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom"', (custom_chore,)).fetchone()['id']
-            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                         (child_id, custom_chore_id, custom_value, date.today()))
-        conn.commit()
-        conn.close()
-        return redirect(url_for('manage_chores', child_id=child_id))
-
-    conn.close()
-    return render_template('manage_chores.html', child=child, chores=chores)
 
 @app.route('/progress/<int:child_id>')
 def progress(child_id):
