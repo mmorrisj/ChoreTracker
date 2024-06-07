@@ -6,13 +6,54 @@
 <body>
     <h1>Manage Chores for {{ child['name'] }}</h1>
     <form method="post">
-        <h2>Daily Preset Chores</h2>
-        {% for chore in chores %}
-            <div>
-                <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
-                <label for="chore_{{ chore['id'] }}">{{ chore['name'] }} ({{ chore['preset_amount'] }} minutes)</label>
-            </div>
-        {% endfor %}
+        <h2>Morning Chores</h2>
+        <table>
+            <tr>
+                <th>Chore</th>
+                <th>Minutes</th>
+                <th>Select</th>
+            </tr>
+            {% for chore in morning_chores %}
+            <tr>
+                <td>{{ chore['name'] }}</td>
+                <td>{{ chore['preset_amount'] }}</td>
+                <td><input type="checkbox" name="preset_chores" value="{{ chore['id'] }}"></td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h2>Afternoon Chores</h2>
+        <table>
+            <tr>
+                <th>Chore</th>
+                <th>Minutes</th>
+                <th>Select</th>
+            </tr>
+            {% for chore in afternoon_chores %}
+            <tr>
+                <td>{{ chore['name'] }}</td>
+                <td>{{ chore['preset_amount'] }}</td>
+                <td><input type="checkbox" name="preset_chores" value="{{ chore['id'] }}"></td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h2>Evening Chores</h2>
+        <table>
+            <tr>
+                <th>Chore</th>
+                <th>Minutes</th>
+                <th>Select</th>
+            </tr>
+            {% for chore in evening_chores %}
+            <tr>
+                <td>{{ chore['name'] }}</td>
+                <td>{{ chore['preset_amount'] }}</td>
+                <td><input type="checkbox" name="preset_chores" value="{{ chore['id'] }}"></td>
+            </tr>
+            {% endfor %}
+        </table>
+
         <h2>Custom Chore</h2>
         <div>
             <label for="custom_chore">Chore Name:</label>
@@ -20,9 +61,8 @@
         </div>
         <div>
             <label for="custom_minutes">Minutes Spent:</label>
-            <input type="text" name="custom_minutes" id="custom_minutes">
+            <input type="number" step="0.01" name="custom_minutes" id="custom_minutes">
         </div>
         <button type="submit">Submit</button>
     </form>
-</body>
-</html>
+</body
