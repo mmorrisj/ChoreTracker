@@ -86,23 +86,6 @@
             earningsChart.data.datasets[0].data = data.map(e => e.total_earned);
             earningsChart.update();
         }
-
-        document.getElementById('choresForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            var formData = new FormData(this);
-            fetch(this.action, {
-                method: this.method,
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.status === 'success') {
-                      updateChart(data.earnings);
-                  }
-              });
-        });
     </script>
 </body>
 </html>
