@@ -9,7 +9,8 @@ CREATE TABLE chores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     preset_amount REAL NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('preset', 'custom'))
+    type TEXT NOT NULL CHECK (type IN ('preset', 'custom')),
+    time_of_day TEXT CHECK (time_of_day IN ('morning', 'afternoon', 'evening'))
 );
 
 CREATE TABLE completed_chores (
