@@ -88,4 +88,120 @@
             <button type="submit" name="quick_submit" value="Act of Kindness">Act of Kindness (+$0.25)</button>
             <button type="submit" name="quick_submit" value="Good Behavior">Good Behavior (+$0.25)</button>
             <button type="submit" name="quick_submit" value="5 Minute Helpfulness">5 Minute Helpfulness (+$1.00)</button>
-            <button type="submit" name="quick_submit" value="10 Minute Helpfulness">10
+            <button type="submit" name="quick_submit" value="10 Minute Helpfulness">10 Minute Helpfulness (+$2.00)</button>
+            <!-- Add more quick submit buttons as needed -->
+        </div>
+
+        <h2>Poor Behavior</h2>
+        <div class="poor-behavior">
+            <button type="submit" name="quick_submit" value="Bad Behavior">Bad Behavior (-$0.25)</button>
+            <button type="submit" name="quick_submit" value="Very Bad Behavior">Very Bad Behavior (-$1.00)</button>
+            <!-- Add more poor behavior buttons as needed -->
+        </div>
+
+        <h2>Morning Chores</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Chore</th>
+                    <th>Minutes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chore in morning_chores %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
+                        <label for="chore_{{ chore['id'] }}">{{ chore['name'] }}</label>
+                    </td>
+                    <td>{{ chore['preset_amount'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <h2>Afternoon Chores</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Chore</th>
+                    <th>Minutes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chore in afternoon_chores %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
+                        <label for="chore_{{ chore['id'] }}">{{ chore['name'] }}</label>
+                    </td>
+                    <td>{{ chore['preset_amount'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <h2>Evening Chores</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Chore</th>
+                    <th>Minutes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chore in evening_chores %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
+                        <label for="chore_{{ chore['id'] }}">{{ chore['name'] }}</label>
+                    </td>
+                    <td>{{ chore['preset_amount'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <h2>Custom Chore</h2>
+        <div>
+            <label for="custom_chore">Chore Name:</label>
+            <input type="text" name="custom_chore" id="custom_chore">
+        </div>
+        <div>
+            <label for="custom_minutes">Minutes Spent:</label>
+            <input type="number" step="0.01" name="custom_minutes" id="custom_minutes">
+        </div>
+        <div>
+            <label for="custom_time_of_day">Time of Day:</label>
+            <select name="custom_time_of_day" id="custom_time_of_day">
+                <option value="Any">Any</option>
+                <option value="Morning">Morning</option>
+                <option value="Afternoon">Afternoon</option>
+                <option value="Evening">Evening</option>
+            </select>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        function handleSubmit(event) {
+            event.preventDefault();
+            var formData = new FormData(event.target);
+            fetch(event.target.action, {
+                method: event.target.method,
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.status === 'success') {
+                      window.location.href = '{{ url_for("parent_dashboard") }}';
+                  } else {
+                      console.log('Error in form submission');
+                  }
+              }).catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
