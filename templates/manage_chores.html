@@ -196,7 +196,6 @@
             }).then(response => response.json())
               .then(data => {
                   if (data.status === 'success') {
-                      alert(data.message);
                       window.location.href = '{{ url_for("parent_dashboard") }}';
                   }
               });
