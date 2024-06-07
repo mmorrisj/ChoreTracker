@@ -23,3 +23,7 @@ CREATE TABLE completed_chores (
     FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (chore_id) REFERENCES chores (id)
 );
+
+INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Act of Kindness', 1, 'preset', 'Any');
+INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('5 Minute Helpfulness', 5, 'preset', 'Any');
+INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('10 Minute Helpfulness', 10, 'preset', 'Any');
