@@ -152,7 +152,12 @@ def manage_chores(child_id):
                          (child_id, custom_chore_id, amount, date.today()))
         if 'quick_submit' in request.form:
             quick_submit_chore = request.form['quick_submit']
-            amount = 0.25
+            if quick_submit_chore == 'Act of Kindness':
+                amount = 0.25
+            elif quick_submit_chore == '5 Minute Helpfulness':
+                amount = 1.00
+            elif quick_submit_chore == '10 Minute Helpfulness':
+                amount = 2.00
             conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                          (child_id, quick_submit_chore, amount, date.today()))
         conn.commit()
@@ -161,6 +166,7 @@ def manage_chores(child_id):
 
     conn.close()
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
+manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
 
 @app.route('/progress/<int:child_id>')
 def progress(child_id):
