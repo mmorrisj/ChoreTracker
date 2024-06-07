@@ -6,11 +6,11 @@
 </head>
 <body>
     <h1>Progress for {{ child['name'] }}</h1>
-    <h2>Total Earned: ${{ total_earned }}</h2>
+    <h2>Total Earned: ${{ '%.2f' % total_earned }}</h2>
     <h2>Completed Chores</h2>
     <ul>
         {% for chore in completed_chores %}
-            <li>{{ chore['name'] }} - ${{ chore['amount_earned'] }} on {{ chore['completion_date'] }}</li>
+            <li>{{ chore['name'] }} - ${{ '%.2f' % chore['amount_earned'] }} on {{ chore['completion_date'] }}</li>
         {% endfor %}
     </ul>
     <a href="{{ url_for('children_dashboard') }}">Back to Dashboard</a>
