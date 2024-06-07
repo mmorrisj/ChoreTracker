@@ -82,7 +82,7 @@
 </head>
 <body>
     <h1>Manage Chores for {{ child['name'] }}</h1>
-    <form method="post">
+    <form id="choresForm" method="post">
         <h2>Quick Submit</h2>
         <div class="quick-submit">
             <button type="submit" name="quick_submit" value="Act of Kindness">Act of Kindness (+$0.25)</button>
@@ -182,5 +182,25 @@
         </div>
         <button type="submit">Submit</button>
     </form>
+
+    <script>
+        document.getElementById('choresForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+            fetch(this.action, {
+                method: this.method,
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.status === 'success') {
+                      alert(data.message);
+                      window.location.href = '{{ url_for("parent_dashboard") }}';
+                  }
+              });
+        });
+    </script>
 </body>
 </html>
