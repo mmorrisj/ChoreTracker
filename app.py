@@ -12,6 +12,119 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def init_db():
+    conn = get_db_connection()
+    with app.open_resource('schema.sql') as f:
+        conn.executescript(f.read().decode('utf8'))
+    conn.close()
+
+@app.cli.command('initdb')
+def initdb_command():
+    """Initialize the database."""
+    init_db()
+    click.echo('Initialized the database.')
+
+@app.cli.command('init_preset_chores')
+def init_preset_chores():
+    """Initialize preset chores."""
+    chores = [
+        ('Act of Kindness', 1, 'preset', 'Any'),
+        ('Good Listening', 1, 'preset', 'Any'),
+        ('Good Behavior', 1, 'preset', 'Any'),
+        # Add more preset chores as needed
+    ]
+
+    conn = get_db_connection()
+    for chore in chores:
+        conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, ?, ?)', chore)
+    conn.commit()
+    conn.close()
+    click.echo('Initialized preset chores.')
+
+@app.route('/')
+def index():
+    if 'user_role' in session:
+        if session['user_role'] == 'parent':
+            return redirect(url_for('parent_dashboard'))
+        elif session['user_role'] == 'child':
+            return redirect(url_for('children_dashboard'))
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM users WHERE name = ? AND role IN ("parent", "child")', (username,)).fetchone()
+        conn.close()
+
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            session['user_role'] = user['role']
+            return redirect(url_for('index'))
+        else:
+            return 'Invalid credentials'
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        role = request.form['role']
+
+        hashed_password = generate_password_hash(password, method='sha256')
+
+        conn = get_db_connection()
+        conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
+        conn.commit()
+        conn.close()
+        
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+@app.route('/parent_dashboard')
+def parent_dashboard():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
+    earnings = []
+    for child in children:
+        total_earned = conn.execute(
+            'SELECT SUM(amount_earned) AS total FROM completed_chores WHERE user_id = ?',
+            (child['id'],)
+        ).fetchone()['total']
+        if total_earned is None:
+            total_earned = 0
+        earnings.append({'name': child['name'], 'total_earned': total_earned})
+    conn.close()
+    return render_template('parent_dashboard.html', children=children, earnings=earnings)
+
+@app.route('/add_preset_chore', methods=['GET', 'POST'])
+def add_preset_chore():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        chore_name = request.form['chore_name']
+        preset_minutes = float(request.form['preset_minutes'])
+        time_of_day = request.form['time_of_day']
+
+        conn = get_db_connection()
+        conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "preset", ?)', 
+                     (chore_name, preset_minutes, time_of_day))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('parent_dashboard'))
+    
+    return render_template('add_preset_chore.html')
+
 def calculate_earnings(minutes):
     hourly_rate = 10.0
     minimum_rate = 0.25
@@ -62,10 +175,9 @@ def manage_chores(child_id):
             else:
                 amount = 0.25
 
-            # Debugging information
             print(f"Processing quick submit: {quick_submit_chore} with amount {amount}")
             
-            # Insert into completed_chores
+            # Insert into completed_chores with a meaningful chore description
             conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                          (child_id, None, amount, date.today()))
             print(f"Inserted into completed_chores: child_id={child_id}, amount={amount}")
@@ -84,10 +196,4 @@ def manage_chores(child_id):
                 total_earned = 0
             earnings.append({'name': child['name'], 'total_earned': total_earned})
         conn.close()
-        return jsonify({'status': 'success', 'earnings': earnings})
-
-    conn.close()
-    return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        return jsonify({'
