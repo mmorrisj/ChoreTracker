@@ -156,6 +156,10 @@ def manage_chores(child_id):
                 amount = 1.00
             elif quick_submit_chore == '10 Minute Helpfulness':
                 amount = 2.00
+            elif quick_submit_chore == 'Bad Behavior':
+                amount = -0.25
+            elif quick_submit_chore == 'Very Bad Behavior':
+                amount = -1.00
             else:
                 amount = 0.25
             conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
