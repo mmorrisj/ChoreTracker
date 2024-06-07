@@ -132,13 +132,15 @@ def calculate_earnings(minutes):
     earnings = max((minutes / 60) * hourly_rate, minimum_rate)
     return round(earnings * 4) / 4  # Rounds to the nearest $0.25
 
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify
+
 @app.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
 def manage_chores(child_id):
     if 'user_role' not in session or session['user_role'] != 'parent':
         return redirect(url_for('login'))
 
     conn = get_db_connection()
-    child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
+    child = conn.execute('SELECT id, name FROM users WHERE id = ?', (child_id,)).fetchone()
     if not child:
         return 'Child not found', 404
     morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
@@ -146,12 +148,14 @@ def manage_chores(child_id):
     evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
 
     if request.method == 'POST':
+        response = {}
         if 'preset_chores' in request.form:
             for chore_id in request.form.getlist('preset_chores'):
                 preset_minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
                 amount = calculate_earnings(preset_minutes)
                 conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                              (child_id, chore_id, amount, date.today()))
+                response['message'] = f"Adding ${amount} to {child['name']}"
         if request.form.get('custom_chore') and request.form.get('custom_minutes') and request.form.get('custom_time_of_day'):
             custom_chore = request.form['custom_chore']
             custom_minutes = float(request.form['custom_minutes'])
@@ -161,6 +165,7 @@ def manage_chores(child_id):
             custom_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom" AND time_of_day = ?', (custom_chore, custom_time_of_day)).fetchone()['id']
             conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                          (child_id, custom_chore_id, amount, date.today()))
+            response['message'] = f"Adding ${amount} to {child['name']}"
         if 'quick_submit' in request.form:
             quick_submit_chore = request.form['quick_submit']
             if quick_submit_chore == '5 Minute Helpfulness':
@@ -175,9 +180,11 @@ def manage_chores(child_id):
                 amount = 0.25
             conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                          (child_id, quick_submit_chore, amount, date.today()))
+            response['message'] = f"Adding ${amount} to {child['name']}" if amount > 0 else f"Deducting ${-amount} from {child['name']}"
         conn.commit()
         conn.close()
-        return redirect(url_for('parent_dashboard'))
+        response['status'] = 'success'
+        return jsonify(response)
 
     conn.close()
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
