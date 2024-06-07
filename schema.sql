@@ -10,7 +10,7 @@ CREATE TABLE chores (
     name TEXT NOT NULL,
     preset_amount REAL NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('preset', 'custom')),
-    time_of_day TEXT CHECK (time_of_day IN ('morning', 'afternoon', 'evening'))
+    time_of_day TEXT NOT NULL CHECK (time_of_day IN ('Morning', 'Afternoon', 'Evening', 'Any'))
 );
 
 CREATE TABLE completed_chores (
