@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, session, url_for
-from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 from datetime import date
 import click
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -51,6 +51,24 @@ def login():
             return 'Invalid credentials'
     return render_template('login.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        role = request.form['role']
+
+        hashed_password = generate_password_hash(password, method='sha256')
+
+        conn = get_db_connection()
+        conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
+        conn.commit()
+        conn.close()
+        
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
 @app.route('/parent_dashboard')
 def parent_dashboard():
     if 'user_role' not in session or session['user_role'] != 'parent':
@@ -61,6 +79,70 @@ def parent_dashboard():
     conn.close()
     return render_template('parent_dashboard.html', children=children)
 
+@app.route('/add_preset_chore', methods=['GET', 'POST'])
+def add_preset_chore():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        chore_name = request.form['chore_name']
+        preset_minutes = float(request.form['preset_minutes'])
+        time_of_day = request.form['time_of_day']
+
+        conn = get_db_connection()
+        conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "preset", ?)', 
+                     (chore_name, preset_minutes, time_of_day))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('parent_dashboard'))
+    
+    return render_template('add_preset_chore.html')
+
+def calculate_earnings(minutes):
+    hourly_rate = 10.0
+    minimum_rate = 0.25
+    earnings = max((minutes / 60) * hourly_rate, minimum_rate)
+    return round(earnings * 4) / 4  # Rounds to the nearest $0.25
+
+@app.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
+def manage_chores(child_id):
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
+    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
+    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
+    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
+
+    if request.method == 'POST':
+        if 'preset_chores' in request.form:
+            for chore_id in request.form.getlist('preset_chores'):
+                preset_minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
+                amount = calculate_earnings(preset_minutes)
+                conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
+                             (child_id, chore_id, amount, date.today()))
+        if request.form.get('custom_chore') and request.form.get('custom_minutes') and request.form.get('custom_time_of_day'):
+            custom_chore = request.form['custom_chore']
+            custom_minutes = float(request.form['custom_minutes'])
+            custom_time_of_day = request.form['custom_time_of_day']
+            amount = calculate_earnings(custom_minutes)
+            conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', (custom_chore, custom_minutes, custom_time_of_day))
+            custom_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom" AND time_of_day = ?', (custom_chore, custom_time_of_day)).fetchone()['id']
+            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
+                         (child_id, custom_chore_id, amount, date.today()))
+        if 'quick_submit' in request.form:
+            quick_submit_chore = request.form['quick_submit']
+            amount = 0.25
+            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
+                         (child_id, quick_submit_chore, amount, date.today()))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('manage_chores', child_id=child_id))
+
+    conn.close()
+    return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
 
 @app.route('/progress/<int:child_id>')
 def progress(child_id):
@@ -95,96 +177,6 @@ def children_dashboard():
 def logout():
     session.clear()
     return redirect(url_for('login'))
-    
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        role = request.form['role']
-
-        hashed_password = generate_password_hash(password, method='sha256')
-
-        conn = get_db_connection()
-        conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
-        conn.commit()
-        conn.close()
-        
-        return redirect(url_for('login'))
-
-    return render_template('register.html')
-
-
-def calculate_earnings(minutes):
-    hourly_rate = 10.0
-    earnings = max((minutes / 60) * hourly_rate, 0.25)
-    return round(earnings * 4) / 4  # Rounds to the nearest $0.25
-
-@app.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
-def manage_chores(child_id):
-    if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('login'))
-
-    conn = get_db_connection()
-    child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
-    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
-    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
-    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
-
-    if request.method == 'POST':
-        if 'preset_chores' in request.form:
-            for chore_id in request.form.getlist('preset_chores'):
-                preset_minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
-                amount = calculate_earnings(preset_minutes)
-                conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                             (child_id, chore_id, amount, date.today()))
-        if request.form.get('custom_chore') and request.form.get('custom_minutes') and request.form.get('custom_time_of_day'):
-            custom_chore = request.form['custom_chore']
-            custom_minutes = float(request.form['custom_minutes'])
-            custom_time_of_day = request.form['custom_time_of_day']
-            amount = calculate_earnings(custom_minutes)
-            conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', (custom_chore, custom_minutes, custom_time_of_day))
-            custom_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom" AND time_of_day = ?', (custom_chore, custom_time_of_day)).fetchone()['id']
-            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                         (child_id, custom_chore_id, amount, date.today()))
-        
-        if 'quick_submit' in request.form:
-            quick_submit_chore = request.form['quick_submit']
-            amount = 0.25
-            conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', (quick_submit_chore, 1, 'Any'))
-            quick_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom"', (quick_submit_chore,)).fetchone()['id']
-            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                         (child_id, quick_chore_id, amount, date.today()))
-        
-        conn.commit()
-        conn.close()
-        return redirect(url_for('manage_chores', child_id=child_id))
-
-    conn.close()
-    return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
-
-@app.route('/add_preset_chore', methods=['GET', 'POST'])
-def add_preset_chore():
-    if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        chore_name = request.form['chore_name']
-        preset_minutes = float(request.form['preset_minutes'])
-        time_of_day = request.form['time_of_day']
-
-        conn = get_db_connection()
-        conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "preset", ?)', 
-                     (chore_name, preset_minutes, time_of_day))
-        conn.commit()
-        conn.close()
-
-        return redirect(url_for('parent_dashboard'))
-    
-    return render_template('add_preset_chore.html')
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
