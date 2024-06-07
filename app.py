@@ -127,9 +127,9 @@ def manage_chores(child_id):
 
     conn = get_db_connection()
     child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
-    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset" AND time_of_day = "morning"').fetchall()
-    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset" AND time_of_day = "afternoon"').fetchall()
-    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset" AND time_of_day = "evening"').fetchall()
+    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
+    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
+    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
 
     if request.method == 'POST':
         if 'preset_chores' in request.form:
@@ -138,14 +138,24 @@ def manage_chores(child_id):
                 amount = calculate_earnings(preset_minutes)
                 conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                              (child_id, chore_id, amount, date.today()))
-        if request.form.get('custom_chore') and request.form.get('custom_minutes'):
+        if request.form.get('custom_chore') and request.form.get('custom_minutes') and request.form.get('custom_time_of_day'):
             custom_chore = request.form['custom_chore']
             custom_minutes = float(request.form['custom_minutes'])
+            custom_time_of_day = request.form['custom_time_of_day']
             amount = calculate_earnings(custom_minutes)
-            conn.execute('INSERT INTO chores (name, preset_amount, type) VALUES (?, ?, "custom")', (custom_chore, custom_minutes))
-            custom_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom"', (custom_chore,)).fetchone()['id']
+            conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', (custom_chore, custom_minutes, custom_time_of_day))
+            custom_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom" AND time_of_day = ?', (custom_chore, custom_time_of_day)).fetchone()['id']
             conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                          (child_id, custom_chore_id, amount, date.today()))
+        
+        if 'quick_submit' in request.form:
+            quick_submit_chore = request.form['quick_submit']
+            amount = 0.25
+            conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', (quick_submit_chore, 1, 'Any'))
+            quick_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom"', (quick_submit_chore,)).fetchone()['id']
+            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
+                         (child_id, quick_chore_id, amount, date.today()))
+        
         conn.commit()
         conn.close()
         return redirect(url_for('manage_chores', child_id=child_id))
