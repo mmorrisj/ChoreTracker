@@ -159,16 +159,18 @@ def add_preset_chore():
     if request.method == 'POST':
         chore_name = request.form['chore_name']
         preset_minutes = float(request.form['preset_minutes'])
+        time_of_day = request.form['time_of_day']
 
         conn = get_db_connection()
-        conn.execute('INSERT INTO chores (name, preset_amount, type) VALUES (?, ?, "preset")', 
-                     (chore_name, preset_minutes))
+        conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "preset", ?)', 
+                     (chore_name, preset_minutes, time_of_day))
         conn.commit()
         conn.close()
 
         return redirect(url_for('parent_dashboard'))
     
     return render_template('add_preset_chore.html')
+
 
 
 if __name__ == '__main__':
