@@ -201,5 +201,15 @@ def manage_chores(child_id):
     conn.close()
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
 
+@app.route('/add_quick_amount', methods=['POST'])
+def add_quick_amount():
+    child_id = request.form.get('child_id')
+    amount = request.form.get('amount')
+    # Ensure the values are valid
+    if child_id and amount:
+        db.execute('UPDATE accounts SET balance = balance + ? WHERE child_id = ?', (amount, child_id))
+        db.commit()
+    return redirect(url_for('manage_chore'))
+
 if __name__ == '__main__':
     app.run(debug=True)
