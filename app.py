@@ -94,8 +94,17 @@ def parent_dashboard():
 
     conn = get_db_connection()
     children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
+    earnings = []
+    for child in children:
+        total_earned = conn.execute(
+            'SELECT SUM(amount_earned) AS total FROM completed_chores WHERE user_id = ?',
+            (child['id'],)
+        ).fetchone()['total']
+        if total_earned is None:
+            total_earned = 0
+        earnings.append({'name': child['name'], 'total_earned': total_earned})
     conn.close()
-    return render_template('parent_dashboard.html', children=children)
+    return render_template('parent_dashboard.html', children=children, earnings=earnings)
 
 @app.route('/add_preset_chore', methods=['GET', 'POST'])
 def add_preset_chore():
