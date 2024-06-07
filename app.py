@@ -179,6 +179,25 @@ def manage_chores(child_id):
     conn.close()
     return render_template('manage_chores.html', child=child, chores=chores)
 
+@app.route('/add_preset_chore', methods=['GET', 'POST'])
+def add_preset_chore():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        chore_name = request.form['chore_name']
+        preset_minutes = float(request.form['preset_minutes'])
+
+        conn = get_db_connection()
+        conn.execute('INSERT INTO chores (name, preset_amount, type) VALUES (?, ?, "preset")', 
+                     (chore_name, preset_minutes))
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('parent_dashboard'))
+    
+    return render_template('add_preset_chore.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
