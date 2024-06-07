@@ -117,7 +117,7 @@ def register():
 
 def calculate_earnings(minutes):
     hourly_rate = 10.0
-    earnings = (minutes / 60) * hourly_rate
+    earnings = max((minutes / 60) * hourly_rate, 0.25)
     return round(earnings * 4) / 4  # Rounds to the nearest $0.25
 
 @app.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
