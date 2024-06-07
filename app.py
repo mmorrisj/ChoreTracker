@@ -196,4 +196,10 @@ def manage_chores(child_id):
                 total_earned = 0
             earnings.append({'name': child['name'], 'total_earned': total_earned})
         conn.close()
-        return jsonify({'
+        return jsonify({'status': 'success', 'earnings': earnings})
+
+    conn.close()
+    return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
+
+if __name__ == '__main__':
+    app.run(debug=True)
