@@ -129,7 +129,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        role = 'parent'
+        role = request.form['role']
 
         hashed_password = generate_password_hash(password, method='sha256')
 
@@ -141,6 +141,7 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html')
+
 
 def calculate_earnings(minutes):
     hourly_rate = 10.0
