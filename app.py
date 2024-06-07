@@ -23,7 +23,25 @@ def initdb_command():
     """Initialize the database."""
     init_db()
     click.echo('Initialized the database.')
+    
+@app.cli.command('init_preset_chores')
+def init_preset_chores():
+    """Initialize preset chores."""
+    chores = [
+        ('Act of Kindness', 1, 'preset', 'Any'),
+        ('Good Listening', 1, 'preset', 'Any'),
+        ('Good Behavior', 1, 'preset', 'Any'),
+        
+        # Add more preset chores as needed
+    ]
 
+    conn = get_db_connection()
+    for chore in chores:
+        conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, ?, ?)', chore)
+    conn.commit()
+    conn.close()
+    click.echo('Initialized preset chores.')
+    
 @app.route('/')
 def index():
     if 'user_role' in session:
