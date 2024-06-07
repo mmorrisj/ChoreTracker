@@ -127,7 +127,9 @@ def manage_chores(child_id):
 
     conn = get_db_connection()
     child = conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
-    chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset"').fetchall()
+    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset" AND time_of_day = "morning"').fetchall()
+    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset" AND time_of_day = "afternoon"').fetchall()
+    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE type = "preset" AND time_of_day = "evening"').fetchall()
 
     if request.method == 'POST':
         if 'preset_chores' in request.form:
@@ -149,7 +151,7 @@ def manage_chores(child_id):
         return redirect(url_for('manage_chores', child_id=child_id))
 
     conn.close()
-    return render_template('manage_chores.html', child=child, chores=chores)
+    return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
 
 @app.route('/add_preset_chore', methods=['GET', 'POST'])
 def add_preset_chore():
