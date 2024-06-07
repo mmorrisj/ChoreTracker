@@ -196,6 +196,23 @@ def children_dashboard():
     conn.close()
     return render_template('children_dashboard.html', children=children)
 
+@app.route('/earnings')
+def earnings():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    earnings = conn.execute('''
+        SELECT users.name, SUM(completed_chores.amount_earned) as total_earnings
+        FROM completed_chores
+        JOIN users ON completed_chores.user_id = users.id
+        WHERE users.role = "child"
+        GROUP BY users.name
+    ''').fetchall()
+    conn.close()
+
+    return render_template('earnings.html', earnings=earnings)
+
 @app.route('/logout')
 def logout():
     session.clear()
