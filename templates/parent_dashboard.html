@@ -86,23 +86,6 @@
             earningsChart.data.datasets[0].data = data.map(e => e.total_earned);
             earningsChart.update();
         }
-
-        function handleSubmit(event) {
-            event.preventDefault();
-            var formData = new FormData(event.target);
-            fetch(event.target.action, {
-                method: event.target.method,
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.status === 'success') {
-                      updateChart(data.earnings);
-                  }
-              });
-        }
     </script>
 </body>
 </html>
