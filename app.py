@@ -177,7 +177,7 @@ def manage_chores(child_id):
                          (child_id, quick_submit_chore, amount, date.today()))
         conn.commit()
         conn.close()
-        return redirect(url_for('manage_chores', child_id=child_id))
+        return redirect(url_for('parent_dashboard'))
 
     conn.close()
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores)
