@@ -250,7 +250,7 @@ def manage_spending(child_id):
 
         conn.commit()
         conn.close()
-        return redirect(url_for('manage_spending', child_id=child_id))
+        return redirect(url_for('parent_dashboard', child_id=child_id))
 
     conn.close()
     return render_template('manage_spending.html', child=child)
