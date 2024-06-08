@@ -64,11 +64,10 @@
                 {{ child['name'] }}
             </button>
         {% endfor %}
-        <h2>Children's Earnings</h2>
+        <h2>Children's Net Earnings</h2>
         <canvas id="myChart" width="400" height="200"></canvas>
 
         <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
-
     </div>
 
     <!-- Include Chart.js and the plugin -->
@@ -85,7 +84,7 @@
             data: {
                 labels: categories,
                 datasets: [{
-                    label: 'Earnings ($)',
+                    label: 'Net Earnings ($)',
                     data: values,
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
@@ -100,7 +99,7 @@
                         max: 100 // Adjust this value as needed
                     }
                 },
-                barThickness: 15, // Adjust this value to make bars thinner
+                barThickness: 25, // Adjust this value to make bars thinner
                 plugins: {
                     legend: {
                         display: false
