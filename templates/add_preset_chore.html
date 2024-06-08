@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Add Preset Chore</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <h1>Add Preset Chore</h1>
@@ -18,6 +19,6 @@
         </select>
         <button type="submit">Add Chore</button>
     </form>
-    <a href="{{ url_for('parent_dashboard') }}">Back to Dashboard</a>
+    <a href="{{ url_for('parent_dashboard') }}" class="button-link">Back to Dashboard</a>
 </body>
 </html>

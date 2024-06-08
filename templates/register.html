@@ -2,7 +2,9 @@
 <html>
 <head>
     <title>Register</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+<div class="container">
 <body>
     <h1>Register</h1>
     <form method="post">
@@ -19,4 +21,5 @@
     </form>
     <a href="{{ url_for('login') }}">Already have an account? Login here.</a>
 </body>
+</div>
 </html>

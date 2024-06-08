@@ -2,59 +2,7 @@
 <html>
 <head>
     <title>Parent Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        h1, h2 {
-            color: #333;
-        }
-        .container {
-            width: 80%;
-            max-width: 800px;
-            background: white;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .child-button {
-            display: block;
-            width: 100%;
-            padding: 20px;
-            font-size: 1.5em;
-            margin-bottom: 10px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-align: left;
-        }
-        .child-button:hover {
-            background-color: #218838;
-        }
-        .button-link {
-            display: inline-block;
-            padding: 10px 20px;
-            font-size: 16px;
-            color: white;
-            background-color: #007BFF;
-            text-align: center;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-        .button-link:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div class="container">
@@ -65,11 +13,11 @@
             </button>
         {% endfor %}
         <h2>Children's Net Earnings</h2>
-        <canvas id="myChart" width="400" height="200"></canvas>
+        <canvas id="myChart" width="400" height="100"></canvas>
 
-        <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
+        
         <a href="{{ url_for('settings') }}" class="button-link">Settings</a>
-        <a href="{{ url_for('all_users') }}" class="button-link">All Users</a>
+    
     </div>
 
     <!-- Include Chart.js and the plugin -->
@@ -98,10 +46,10 @@
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 200 // Adjust this value as needed
+                        max: 100 // Sets the maximum value of the x-axis
                     }
                 },
-                barThickness: 10, // Adjust this value to make bars thinner
+                barThickness: 25, // Adjust this value to make bars thinner
                 plugins: {
                     legend: {
                         display: false

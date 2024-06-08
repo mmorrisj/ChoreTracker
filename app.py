@@ -219,7 +219,7 @@ def add_preset_chore():
         conn.commit()
         conn.close()
 
-        return redirect(url_for('parent_dashboard'))
+        return redirect(url_for('settings'))
     
     return render_template('add_preset_chore.html')
 
@@ -363,7 +363,7 @@ def clear_all_preset_chores():
     conn.execute('DELETE FROM chores WHERE type = "preset"')
     conn.commit()
     conn.close()
-    return redirect(url_for('parent_dashboard'))
+    return redirect(url_for('settings'))
 
 @app.route('/clear_preset_chore', methods=['POST'])
 def clear_preset_chore():
@@ -375,7 +375,7 @@ def clear_preset_chore():
     conn.execute('DELETE FROM chores WHERE name = ? AND type = "preset"', (chore_name,))
     conn.commit()
     conn.close()
-    return redirect(url_for('parent_dashboard'))
+    return redirect(url_for('settings'))
 
 @app.route('/clear_all_completed_chores', methods=['POST'])
 def clear_all_completed_chores():
@@ -386,7 +386,7 @@ def clear_all_completed_chores():
     conn.execute('DELETE FROM completed_chores')
     conn.commit()
     conn.close()
-    return redirect(url_for('parent_dashboard'))
+    return redirect(url_for('settings'))
 
 @app.route('/clear_all_completed_expenses', methods=['POST'])
 def clear_all_completed_expenses():
@@ -397,7 +397,7 @@ def clear_all_completed_expenses():
     conn.execute('DELETE FROM completed_expenses')
     conn.commit()
     conn.close()
-    return redirect(url_for('parent_dashboard'))
+    return redirect(url_for('settings'))
 
 @app.route('/clear_all_funds_and_chores', methods=['POST'])
 def clear_all_funds_and_chores():
@@ -409,7 +409,7 @@ def clear_all_funds_and_chores():
     conn.execute('DELETE FROM completed_expenses')
     conn.commit()
     conn.close()
-    return redirect(url_for('parent_dashboard'))
+    return redirect(url_for('settings'))
     
 @app.route('/settings')
 def settings():
@@ -418,9 +418,10 @@ def settings():
 
     conn = get_db_connection()
     chores = conn.execute('SELECT * FROM chores').fetchall()
+    users = conn.execute('SELECT * FROM users').fetchall()
     conn.close()
 
-    return render_template('settings.html', chores=chores)
+    return render_template('settings.html', chores=chores,users=users)
 
 @app.route('/remove_chore', methods=['POST'])
 def remove_chore():
@@ -464,7 +465,7 @@ def remove_user():
     conn.commit()
     conn.close()
 
-    return redirect(url_for('all_users'))
+    return redirect(url_for('settings'))
 
 @app.route('/all_users', methods=['GET'])
 def all_users():
