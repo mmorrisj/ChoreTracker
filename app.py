@@ -28,9 +28,22 @@ def initdb_command():
 def init_preset_chores():
     """Initialize preset chores."""
     chores = [
-        ('Act of Kindness', 1, 'preset', 'Any'),
-        ('Good Listening', 1, 'preset', 'Any'),
-        ('Good Behavior', 1, 'preset', 'Any'),
+        ('Brush Teeth', 1, 'preset', 'Morning'),
+        ('Get Ready for Day', 5, 'preset', 'Morning'),
+        ('Make Bed and Tidy Room', 5, 'preset', 'Morning'),
+        ('Fold and Put Away Laundry', 10, 'preset', 'Morning'),
+        ('Help Set Table', 1, 'preset', 'Afternoon'),
+        ('Finish Prepared Meal', 1, 'preset', 'Afternoon'),
+        ('Put Dishes in Sink', 1, 'preset', 'Afternoon'),
+        ('Put Away Toys', 1, 'preset', 'Afternoon'),
+        ('Finish Prepared Meal', 1, 'preset', 'Evening'),
+        ('Clear Dishwasher', 5, 'preset', 'Evening'),
+        ('Load Dishwasher', 5, 'preset', 'Evening'),
+        ('Clean Surfaces', 5, 'preset', 'Evening'),
+        ('Brush Teeth', 1, 'preset', 'Evening'),
+        ('Get in Pajamas', 1, 'preset', 'Evening'),
+        ('Reading by 830PM', 1, 'preset', 'Evening'),
+        ('Asleep by 9PM', 1, 'preset', 'Evening'),
         # Add more preset chores as needed
     ]
 
