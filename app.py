@@ -99,11 +99,22 @@ def parent_dashboard():
             'SELECT SUM(amount_earned) AS total FROM completed_chores WHERE user_id = ?',
             (child['id'],)
         ).fetchone()['total']
+        total_spent = conn.execute(
+            'SELECT SUM(amount_deducted) AS total FROM completed_expenses WHERE user_id = ?',
+            (child['id'],)
+        ).fetchone()['total']
+
         if total_earned is None:
             total_earned = 0
-        earnings.append({'name': child['name'], 'total_earned': total_earned})
+        if total_spent is None:
+            total_spent = 0
+
+        net_earnings = total_earned + total_spent  # total_spent is negative
+
+        earnings.append({'name': child['name'], 'total_earned': net_earnings})
     conn.close()
     return render_template('parent_dashboard.html', children=children, earnings=earnings)
+
 
 @app.route('/add_preset_chore', methods=['GET', 'POST'])
 def add_preset_chore():
