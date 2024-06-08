@@ -68,11 +68,14 @@
         <h2>Children's Earnings</h2>
         <canvas id="myChart" width="400" height="200"></canvas>
 
+        <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Sample data
-        const categories = ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5'];
-        const values = [120, 90, 150, 80, 130];
+        // Get data from the server-side template rendering
+        const categories = {{ earnings|map(attribute='name')|list|safe }};
+        const values = {{ earnings|map(attribute='total_earned')|list|safe }};
 
         const ctx = document.getElementById('myChart').getContext('2d');
         const myChart = new Chart(ctx, {
@@ -80,7 +83,7 @@
             data: {
                 labels: categories,
                 datasets: [{
-                    label: 'Values',
+                    label: 'Earnings ($)',
                     data: values,
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
@@ -92,7 +95,7 @@
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 200 // Sets the maximum value of the x-axis
+                        max: 200 // Adjust this value as needed
                     }
                 },
                 barThickness: 10, // Adjust this value to make bars thinner
@@ -104,6 +107,5 @@
             }
         });
     </script>
-     <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
 </body>
 </html>
