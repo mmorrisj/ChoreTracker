@@ -88,15 +88,7 @@
         <canvas id="myChart" width="400" height="200"></canvas>
 
         <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
-        
-        <form action="{{ url_for('clear_all_preset_chores') }}" method="post">
-            <button type="submit">Clear All Preset Chores</button>
-        </form>
-        
-        <form action="{{ url_for('clear_preset_chore') }}" method="post">
-            <input type="text" name="chore_name" placeholder="Chore name to clear">
-            <button type="submit">Clear Specific Preset Chore</button>
-        </form>
+        <a href="{{ url_for('settings') }}" class="button-link">Settings</a>
     </div>
 
     <!-- Include Chart.js and the plugin -->
