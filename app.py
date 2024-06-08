@@ -366,6 +366,12 @@ def clear_preset_chore():
     conn.commit()
     conn.close()
     return redirect(url_for('parent_dashboard'))
+    
+@app.route('/settings')
+def settings():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+    return render_template('settings.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
