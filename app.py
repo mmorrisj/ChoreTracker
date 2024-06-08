@@ -54,6 +54,24 @@ def init_preset_chores():
     conn.close()
     click.echo('Initialized preset chores.')
 
+@app.cli.command('init_users')
+def init_users():
+    """Initialize parent and child users."""
+    users = [
+        ('parent', 'parent', 'parent'),
+        ('Virginia', 'virginia', 'child'),
+        ('Evelyn', 'evelyn', 'child'),
+        ('Lucy', 'lucy', 'child')
+    ]
+
+    conn = get_db_connection()
+    for username, password, role in users:
+        hashed_password = generate_password_hash(password, method='sha256')
+        conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
+    conn.commit()
+    conn.close()
+    click.echo('Initialized users.')
+    
 @app.route('/')
 def index():
     if 'user_role' in session:
