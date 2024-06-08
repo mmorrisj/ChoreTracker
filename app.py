@@ -253,7 +253,8 @@ def manage_spending(child_id):
         return redirect(url_for('manage_spending', child_id=child_id))
 
     conn.close()
-    return render_template('parent_dashboard.html', child=child)
+    return render_template('manage_spending.html', child=child)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
