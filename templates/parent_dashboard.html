@@ -66,40 +66,43 @@
             </button>
         {% endfor %}
         <h2>Children's Earnings</h2>
-        <canvas id="earningsChart"></canvas>
-    </div>
+        <canvas id="myChart" width="400" height="200"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        var ctx = document.getElementById('earningsChart').getContext('2d');
-        var earningsData = {
-            labels: {{ earnings|map(attribute='name')|list|safe }},
-            datasets: [{
-                label: 'Total Earnings ($)',
-                data: {{ earnings|map(attribute='total_earned')|list|safe }},
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        };
+        // Sample data
+        const categories = ['Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5'];
+        const values = [120, 90, 150, 80, 130];
 
-        var earningsChart = new Chart(ctx, {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
             type: 'bar',
-            data: earningsData,
+            data: {
+                labels: categories,
+                datasets: [{
+                    label: 'Values',
+                    data: values,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
             options: {
+                indexAxis: 'y', // This makes the chart horizontal
                 scales: {
-                    y: {
-                        beginAtZero: true
+                    x: {
+                        beginAtZero: true,
+                        max: 200 // Sets the maximum value of the x-axis
+                    }
+                },
+                barThickness: 10, // Adjust this value to make bars thinner
+                plugins: {
+                    legend: {
+                        display: false
                     }
                 }
             }
         });
-
-        function updateChart(data) {
-            earningsChart.data.labels = data.map(e => e.name);
-            earningsChart.data.datasets[0].data = data.map(e => e.total_earned);
-            earningsChart.update();
-        }
     </script>
      <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
 </body>
