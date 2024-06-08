@@ -24,6 +24,25 @@ def initdb_command():
     init_db()
     click.echo('Initialized the database.')
 
+@app.cli.command('clear_all_chores')
+def clear_preset_chores():
+    """Clear all preset chores."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM chores WHERE type = "preset"')
+    conn.commit()
+    conn.close()
+    click.echo('Cleared all preset chores.')
+
+@app.cli.command('clear_chore')
+@click.argument('chore_name')
+def clear_preset_chore(chore_name):
+    """Clear a specific preset chore by name."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM chores WHERE name = ? AND type = "preset"', (chore_name,))
+    conn.commit()
+    conn.close()
+    click.echo(f'Cleared preset chore: {chore_name}')
+
 @app.cli.command('init_preset_chores')
 def init_preset_chores():
     """Initialize preset chores."""
@@ -297,6 +316,28 @@ def manage_spending(child_id):
     conn.close()
     return render_template('manage_spending.html', child=child)
 
+@app.route('/clear_all_preset_chores', methods=['POST'])
+def clear_all_preset_chores():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM chores WHERE type = "preset"')
+    conn.commit()
+    conn.close()
+    return redirect(url_for('parent_dashboard'))
+
+@app.route('/clear_preset_chore', methods=['POST'])
+def clear_preset_chore():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    chore_name = request.form['chore_name']
+    conn = get_db_connection()
+    conn.execute('DELETE FROM chores WHERE name = ? AND type = "preset"', (chore_name,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('parent_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
