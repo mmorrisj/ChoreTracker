@@ -17,7 +17,35 @@ def init_db():
     with app.open_resource('schema.sql') as f:
         conn.executescript(f.read().decode('utf8'))
     conn.close()
+    
+@app.cli.command('clear_earnings')
+def clear_completed_chores():
+    """Clear all completed chores."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM completed_chores')
+    conn.commit()
+    conn.close()
+    click.echo('Cleared all completed chores.')
 
+@app.cli.command('clear_expenses')
+def clear_completed_expenses():
+    """Clear all completed expenses."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM completed_expenses')
+    conn.commit()
+    conn.close()
+    click.echo('Cleared all completed expenses.')
+
+@app.cli.command('clear_all_fund)
+def clear_all_funds_and_chores():
+    """Clear all completed chores and expenses."""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM completed_chores')
+    conn.execute('DELETE FROM completed_expenses')
+    conn.commit()
+    conn.close()
+    click.echo('Cleared all completed chores and expenses.')
+    
 @app.cli.command('initdb')
 def initdb_command():
     """Initialize the database."""
