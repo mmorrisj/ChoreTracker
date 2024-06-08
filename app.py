@@ -36,7 +36,7 @@ def clear_completed_expenses():
     conn.close()
     click.echo('Cleared all completed expenses.')
 
-@app.cli.command('clear_all_funds)
+@app.cli.command('clear_all_funds')
 def clear_all_funds_and_chores():
     """Clear all completed chores and expenses."""
     conn = get_db_connection()
