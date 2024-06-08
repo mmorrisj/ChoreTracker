@@ -51,7 +51,4 @@ CREATE TABLE completed_expenses (
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Act of Kindness', 1, 'preset', 'Any');
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('5 Minute Helpfulness', 5, 'preset', 'Any');
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('10 Minute Helpfulness', 10, 'preset', 'Any');
-INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Make Bed', 5, 'preset', 'Morning');
-INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Brush Teeth', 1, 'preset', 'Morning');
-INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Get Ready for Day', 10, 'preset', 'Morning');
-INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Brush Teeth', 1, 'preset', 'Evening');
+
