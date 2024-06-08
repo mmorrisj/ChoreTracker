@@ -211,5 +211,49 @@ def add_quick_amount():
         db.commit()
     return redirect(url_for('manage_chore'))
 
+@app.route('/manage_spending/<int:child_id>', methods=['GET', 'POST'])
+def manage_spending(child_id):
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    child = conn.execute('SELECT id, name FROM users WHERE id = ?', (child_id,)).fetchone()
+    if not child:
+        return 'Child not found', 404
+
+    if request.method == 'POST':
+        if 'preset_expenses' in request.form:
+            for expense_id in request.form.getlist('preset_expenses'):
+                preset_amount = conn.execute('SELECT preset_amount FROM expenses WHERE id = ?', (expense_id,)).fetchone()['preset_amount']
+                conn.execute('INSERT INTO completed_expenses (user_id, expense_id, amount_deducted, date) VALUES (?, ?, ?, ?)',
+                             (child_id, expense_id, -preset_amount, date.today()))
+
+        if request.form.get('custom_description') and request.form.get('custom_amount'):
+            custom_description = request.form['custom_description']
+            custom_amount = float(request.form['custom_amount'])
+            conn.execute('INSERT INTO expenses (name, preset_amount, type) VALUES (?, ?, "custom")', (custom_description, custom_amount))
+            custom_expense_id = conn.execute('SELECT id FROM expenses WHERE name = ? AND type = "custom"', (custom_description,)).fetchone()['id']
+            conn.execute('INSERT INTO completed_expenses (user_id, expense_id, amount_deducted, date) VALUES (?, ?, ?, ?)',
+                         (child_id, custom_expense_id, -custom_amount, date.today()))
+
+        if 'quick_submit' in request.form:
+            quick_submit_expense = request.form['quick_submit']
+            if quick_submit_expense == '25 Cent Spend':
+                amount = -0.25
+            elif quick_submit_expense == '1 Dollar Spend':
+                amount = -1.00
+            elif quick_submit_expense == '5 Dollar Spend':
+                amount = -5.00
+
+            conn.execute('INSERT INTO completed_expenses (user_id, expense_id, amount_deducted, date) VALUES (?, ?, ?, ?)',
+                         (child_id, None, amount, date.today()))
+
+        conn.commit()
+        conn.close()
+        return redirect(url_for('manage_spending', child_id=child_id))
+
+    conn.close()
+    return render_template('manage_spending.html', child=child)
+
 if __name__ == '__main__':
     app.run(debug=True)
