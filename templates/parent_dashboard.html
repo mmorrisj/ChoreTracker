@@ -51,7 +51,6 @@
             text-decoration: none;
             border-radius: 5px;
         }
-
         .button-link:hover {
             background-color: #0056b3;
         }
@@ -71,7 +70,9 @@
         <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
     </div>
 
+    <!-- Include Chart.js and the plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script>
         // Get data from the server-side template rendering
         const categories = {{ earnings|map(attribute='name')|list|safe }};
@@ -102,9 +103,21 @@
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'right',
+                        formatter: function(value, context) {
+                            return '$' + value.toFixed(2);
+                        },
+                        color: '#000',
+                        font: {
+                            weight: 'bold'
+                        }
                     }
                 }
-            }
+            },
+            plugins: [ChartDataLabels]
         });
     </script>
 </body>
