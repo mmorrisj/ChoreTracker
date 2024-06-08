@@ -54,26 +54,6 @@
         .button-link:hover {
             background-color: #0056b3;
         }
-        form {
-            margin-top: 20px;
-        }
-        input[type="text"] {
-            padding: 10px;
-            margin-right: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #c82333;
-        }
     </style>
 </head>
 <body>
@@ -88,7 +68,8 @@
         <canvas id="myChart" width="400" height="200"></canvas>
 
         <a href="add_preset_chore" class="button-link">Create Preset Chore</a>
-        <a href="settings" class="button-link">Settings</a>
+        <a href="{{ url_for('settings') }}" class="button-link">Settings</a>
+        <a href="{{ url_for('all_users') }}" class="button-link">All Users</a>
     </div>
 
     <!-- Include Chart.js and the plugin -->

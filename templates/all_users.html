@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Settings</title>
+    <title>All Users</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -41,7 +41,7 @@
         form {
             margin-top: 20px;
         }
-        input[type="text"], input[type="number"] {
+        input[type="text"] {
             padding: 10px;
             margin-right: 10px;
             border: 1px solid #ccc;
@@ -62,57 +62,30 @@
 </head>
 <body>
     <div class="container">
-        <h1>Settings</h1>
-
-        <form action="{{ url_for('clear_all_preset_chores') }}" method="post">
-            <button type="submit">Clear All Preset Chores</button>
-        </form>
-
-        <form action="{{ url_for('clear_preset_chore') }}" method="post">
-            <input type="text" name="chore_name" placeholder="Chore name to clear">
-            <button type="submit">Clear Specific Preset Chore</button>
-        </form>
-
-        <form action="{{ url_for('clear_all_completed_chores') }}" method="post">
-            <button type="submit">Clear All Completed Chores</button>
-        </form>
-
-        <form action="{{ url_for('clear_all_completed_expenses') }}" method="post">
-            <button type="submit">Clear All Completed Expenses</button>
-        </form>
-
-        <form action="{{ url_for('clear_all_funds_and_chores') }}" method="post">
-            <button type="submit">Clear All Funds and Chores</button>
-        </form>
-
-        <h2>All Chores</h2>
+        <h1>All Users</h1>
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
                     <th>Name</th>
-                    <th>Preset Amount</th>
-                    <th>Type</th>
-                    <th>Time of Day</th>
+                    <th>Role</th>
                 </tr>
             </thead>
             <tbody>
-                {% for chore in chores %}
+                {% for user in users %}
                 <tr>
-                    <td>{{ chore['id'] }}</td>
-                    <td>{{ chore['name'] }}</td>
-                    <td>{{ chore['preset_amount'] }}</td>
-                    <td>{{ chore['type'] }}</td>
-                    <td>{{ chore['time_of_day'] }}</td>
+                    <td>{{ user['id'] }}</td>
+                    <td>{{ user['name'] }}</td>
+                    <td>{{ user['role'] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <h2>Remove Chore</h2>
-        <form action="{{ url_for('remove_chore') }}" method="post">
-            <input type="number" name="chore_id" placeholder="Chore ID">
-            <button type="submit">Remove Chore</button>
+        <h2>Remove User</h2>
+        <form action="{{ url_for('remove_user') }}" method="post">
+            <input type="number" name="user_id" placeholder="User ID">
+            <button type="submit">Remove User</button>
         </form>
     </div>
 </body>

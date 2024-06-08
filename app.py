@@ -78,6 +78,7 @@ def init_preset_chores():
         ('Brush Teeth', 1, 'preset', 'Morning'),
         ('Get Ready for Day', 5, 'preset', 'Morning'),
         ('Make Bed and Tidy Room', 5, 'preset', 'Morning'),
+        ('Make Breakfast', 1, 'preset', 'Morning'),
         ('Fold and Put Away Laundry', 10, 'preset', 'Morning'),
         ('Help Set Table', 1, 'preset', 'Afternoon'),
         ('Finish Prepared Meal', 1, 'preset', 'Afternoon'),
@@ -90,7 +91,7 @@ def init_preset_chores():
         ('Brush Teeth', 1, 'preset', 'Evening'),
         ('Get in Pajamas', 1, 'preset', 'Evening'),
         ('Reading by 830PM', 1, 'preset', 'Evening'),
-        ('Asleep by 9PM', 1, 'preset', 'Evening'),
+        ('Lights Out by 9PM', 1, 'preset', 'Evening'),
         # Add more preset chores as needed
     ]
 
@@ -105,7 +106,7 @@ def init_preset_chores():
 def init_users():
     """Initialize parent and child users."""
     users = [
-        ('parent', 'parent', 'parent'),
+        ('Parent', 'parent_password', 'parent'),
         ('Virginia', 'virginia', 'child'),
         ('Evelyn', 'evelyn', 'child'),
         ('Lucy', 'lucy', 'child')
@@ -113,11 +114,19 @@ def init_users():
 
     conn = get_db_connection()
     for username, password, role in users:
+        # Check for duplicate child names
+        if role == 'child':
+            existing_child = conn.execute('SELECT * FROM users WHERE name = ? AND role = "child"', (username,)).fetchone()
+            if existing_child:
+                click.echo(f'Child name {username} already exists. Skipping...')
+                continue
+
         hashed_password = generate_password_hash(password, method='sha256')
         conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
     conn.commit()
     conn.close()
     click.echo('Initialized users.')
+
     
 @app.route('/')
 def index():
@@ -294,10 +303,11 @@ def manage_chores(child_id):
 def add_quick_amount():
     child_id = request.form.get('child_id')
     amount = request.form.get('amount')
+    conn = get_db_connection()
     # Ensure the values are valid
     if child_id and amount:
-        db.execute('UPDATE accounts SET balance = balance + ? WHERE child_id = ?', (amount, child_id))
-        db.commit()
+        conn.execute('UPDATE accounts SET balance = balance + ? WHERE child_id = ?', (amount, child_id))
+        conn.commit()
     return redirect(url_for('manage_chore'))
 
 @app.route('/manage_spending/<int:child_id>', methods=['GET', 'POST'])
@@ -366,12 +376,106 @@ def clear_preset_chore():
     conn.commit()
     conn.close()
     return redirect(url_for('parent_dashboard'))
+
+@app.route('/clear_all_completed_chores', methods=['POST'])
+def clear_all_completed_chores():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM completed_chores')
+    conn.commit()
+    conn.close()
+    return redirect(url_for('parent_dashboard'))
+
+@app.route('/clear_all_completed_expenses', methods=['POST'])
+def clear_all_completed_expenses():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM completed_expenses')
+    conn.commit()
+    conn.close()
+    return redirect(url_for('parent_dashboard'))
+
+@app.route('/clear_all_funds_and_chores', methods=['POST'])
+def clear_all_funds_and_chores():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    conn.execute('DELETE FROM completed_chores')
+    conn.execute('DELETE FROM completed_expenses')
+    conn.commit()
+    conn.close()
+    return redirect(url_for('parent_dashboard'))
     
 @app.route('/settings')
 def settings():
     if 'user_role' not in session or session['user_role'] != 'parent':
         return redirect(url_for('login'))
-    return render_template('settings.html')
+
+    conn = get_db_connection()
+    chores = conn.execute('SELECT * FROM chores').fetchall()
+    conn.close()
+
+    return render_template('settings.html', chores=chores)
+
+@app.route('/remove_chore', methods=['POST'])
+def remove_chore():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    chore_id = request.form['chore_id']
+    conn = get_db_connection()
+
+    # Check if the chore exists
+    chore = conn.execute('SELECT * FROM chores WHERE id = ?', (chore_id,)).fetchone()
+    if not chore:
+        conn.close()
+        return 'Chore not found', 404
+
+    # Remove chore
+    conn.execute('DELETE FROM chores WHERE id = ?', (chore_id,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('settings'))
+
+@app.route('/remove_user', methods=['POST'])
+def remove_user():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    user_id = request.form['user_id']
+    conn = get_db_connection()
+
+    # Check if the user exists
+    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        return 'User not found', 404
+
+    # Remove user and related completed chores and expenses
+    conn.execute('DELETE FROM completed_chores WHERE user_id = ?', (user['id'],))
+    conn.execute('DELETE FROM completed_expenses WHERE user_id = ?', (user['id'],))
+    conn.execute('DELETE FROM users WHERE id = ?', (user['id'],))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('all_users'))
+
+@app.route('/all_users', methods=['GET'])
+def all_users():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    users = conn.execute('SELECT * FROM users').fetchall()
+    conn.close()
+
+    return render_template('all_users.html', users=users)
 
 if __name__ == '__main__':
     app.run(debug=True)
