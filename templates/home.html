@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .child-section {
+            margin-bottom: 20px;
+        }
+        .child-section h3 {
+            margin-bottom: 10px;
+        }
+        .child-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        .child-section ul li {
+            padding: 5px 0;
+        }
+        .header {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .header a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        canvas {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="{{ url_for('parent_dashboard') }}">Parent Dashboard</a>
+    </div>
+
+    <div class="container">
+        <h1>Children's Net Earnings</h1>
+        <canvas id="earningsChart" width="400" height="200"></canvas>
+
+        <h2>Combined Total Earnings: ${{ combined_total }}</h2>
+
+        <div class="child-section">
+            <h2>Earnings Over Time</h2>
+            {% for child, earnings in earnings_over_time.items() %}
+                <h3>{{ child }}</h3>
+                <canvas id="earningsOverTimeChart-{{ loop.index }}" width="400" height="200"></canvas>
+                <script>
+                    const ctx{{ loop.index }} = document.getElementById('earningsOverTimeChart-{{ loop.index }}').getContext('2d');
+                    const data{{ loop.index }} = {
+                        labels: {{ earnings|map(attribute='date')|list|safe }},
+                        datasets: [{
+                            label: 'Earnings ($)',
+                            data: {{ earnings|map(attribute='earnings')|list|safe }},
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    };
+                    const chart{{ loop.index }} = new Chart(ctx{{ loop.index }}, {
+                        type: 'line',
+                        data: data{{ loop.index }},
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                </script>
+            {% endfor %}
+        </div>
+
+        <div class="child-section">
+            <h2>Last 5 Chores Completed</h2>
+            {% for child, chores in last_chores.items() %}
+                <h3>{{ child }}</h3>
+                <ul>
+                    {% for chore in chores %}
+                        <li>{{ chore['completion_date'] }} - {{ chore['name'] }}: ${{ chore['amount_earned'] }}</li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Include Chart.js and the plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script>
+        // Get data from the server-side template rendering
+        const categories = {{ earnings|map(attribute='name')|list|safe }};
+        const values = {{ earnings|map(attribute='total_earned')|list|safe }};
+
+        const ctx = document.getElementById('earningsChart').getContext('2d');
+        const earningsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: categories,
+                datasets: [{
+                    label: 'Net Earnings ($)',
+                    data: values,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y', // This makes the chart horizontal
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 200 // Adjust this value as needed
+                    }
+                },
+                barThickness: 10, // Adjust this value to make bars thinner
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'right',
+                        formatter: function(value, context) {
+                            return '$' + value.toFixed(2);
+                        },
+                        color: '#000',
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    </script>
+</body>
+</html>
