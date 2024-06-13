@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Goal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            width: 80%;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"], input[type="number"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>Add a New Goal</h1>
+    <form method="post">
+        <div>
+            <label for="goal_name">Goal Name:</label>
+            <input type="text" name="goal_name" id="goal_name" required>
+        </div>
+        <div>
+            <label for="total_amount">Total Amount:</label>
+            <input type="number" step="0.01" name="total_amount" id="total_amount" required>
+        </div>
+        <button type="submit">Add Goal</button>
+    </form>
+</body>
+</html>

@@ -27,6 +27,35 @@ def clear_completed_chores():
     conn.close()
     click.echo('Cleared all completed chores.')
 
+
+def check_completed_chores():
+    conn = sqlite3.connect('chore_chart.db')
+    cursor = conn.cursor()
+
+    # Check the contents of the completed_chores table
+    cursor.execute('SELECT * FROM completed_chores')
+    rows = cursor.fetchall()
+    
+    for row in rows:
+        print(row)
+
+    conn.close()
+    
+def add_dummy_data():
+    conn = get_db_connection()
+    conn.executescript('''
+    INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES 
+    (2, 1, 5.0, '2024-06-01'),
+    (2, 2, 2.5, '2024-06-02'),
+    (3, 1, 3.0, '2024-06-03'),
+    (3, 2, 4.0, '2024-06-04'),
+    (4, 1, 1.0, '2024-06-05'),
+    (4, 2, 2.0, '2024-06-06');
+    ''')
+    conn.commit()
+    conn.close()
+
+
 @app.cli.command('clear_expenses')
 def clear_completed_expenses():
     """Clear all completed expenses."""
@@ -199,9 +228,17 @@ def parent_dashboard():
         net_earnings = total_earned + total_spent  # total_spent is negative
 
         earnings.append({'name': child['name'], 'total_earned': net_earnings})
+    
+    # Fetch earnings over time for the line chart
+    earnings_over_time = conn.execute(
+        'SELECT completion_date, SUM(amount_earned) as total_earned FROM completed_chores GROUP BY completion_date ORDER BY completion_date'
+    ).fetchall()
     conn.close()
-    return render_template('parent_dashboard.html', children=children, earnings=earnings)
 
+    dates = [row['completion_date'] for row in earnings_over_time]
+    earnings_data = [row['total_earned'] for row in earnings_over_time]
+
+    return render_template('parent_dashboard.html', children=children, earnings=earnings, dates=dates, earnings_data=earnings_data)
 
 @app.route('/add_preset_chore', methods=['GET', 'POST'])
 def add_preset_chore():
@@ -297,10 +334,119 @@ def manage_chores(child_id):
                 total_earned = 0
             earnings.append({'name': child['name'], 'total_earned': total_earned})
         conn.close()
-        return jsonify({'status': 'success', 'earnings': earnings})
+        return render_template('parent_dashboard.html', children=children, earnings=earnings)
 
     conn.close()
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores, today_date=date.today().isoformat())
+
+@app.route('/add_goal', methods=['GET', 'POST'])
+def add_goal():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        goal_name = request.form['goal_name']
+        total_amount = float(request.form['total_amount'])
+        
+        conn = get_db_connection()
+        conn.execute('INSERT INTO goals (name, total_amount) VALUES (?, ?)', (goal_name, total_amount))
+        conn.commit()
+        conn.close()
+        
+        return redirect(url_for('assign_goals'))
+    
+    return render_template('add_goal.html')
+
+@app.route('/assign_goals', methods=['GET', 'POST'])
+def assign_goals():
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
+    goals = conn.execute('SELECT id, name FROM goals').fetchall()
+    
+    if request.method == 'POST':
+        child_id = request.form['child_id']
+        goal_id = request.form['goal_id']
+        
+        conn.execute('INSERT INTO child_goals (child_id, goal_id) VALUES (?, ?)', (child_id, goal_id))
+        conn.commit()
+        conn.close()
+        
+        return redirect(url_for('home'))
+
+    conn.close()
+    return render_template('assign_goals.html', children=children, goals=goals)
+
+@app.route('/home')
+def home():
+    conn = get_db_connection()
+    children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
+    
+    earnings = []
+    combined_total = 0
+    earnings_over_time = {}
+    last_chores = {}
+    goal_progress = {}
+
+    for child in children:
+        child_id = child['id']
+        child_name = child['name']
+
+        total_earned = conn.execute(
+            'SELECT SUM(amount_earned) AS total FROM completed_chores WHERE user_id = ?',
+            (child_id,)
+        ).fetchone()['total']
+        
+        total_spent = conn.execute(
+            'SELECT SUM(amount_deducted) AS total FROM completed_expenses WHERE user_id = ?',
+            (child_id,)
+        ).fetchone()['total']
+
+        if total_earned is None:
+            total_earned = 0
+        if total_spent is None:
+            total_spent = 0
+
+        net_earnings = total_earned + total_spent  # total_spent is negative
+        combined_total += net_earnings
+        earnings.append({'name': child_name, 'total_earned': net_earnings})
+
+        earnings_over_time[child_name] = conn.execute(
+            'SELECT completion_date AS date, SUM(amount_earned) AS earnings FROM completed_chores WHERE user_id = ? GROUP BY completion_date ORDER BY completion_date DESC',
+            (child_id,)
+        ).fetchall()
+
+        last_chores[child_name] = conn.execute(
+            'SELECT chores.name, completed_chores.amount_earned, completed_chores.completion_date '
+            'FROM completed_chores '
+            'JOIN chores ON completed_chores.chore_id = chores.id '
+            'WHERE completed_chores.user_id = ? '
+            'ORDER BY completed_chores.completion_date DESC '
+            'LIMIT 5',
+            (child_id,)
+        ).fetchall()
+
+        goals = conn.execute(
+            'SELECT goals.name, goals.total_amount FROM child_goals JOIN goals ON child_goals.goal_id = goals.id WHERE child_goals.child_id = ?',
+            (child_id,)
+        ).fetchall()
+        
+        for goal in goals:
+            progress = conn.execute(
+                'SELECT SUM(amount_earned) AS total FROM completed_chores WHERE user_id = ?',
+                (child_id,)
+            ).fetchone()['total']
+            goal_progress.setdefault(child_name, []).append({
+                'name': goal['name'],
+                'progress': progress if progress else 0,
+                'total': goal['total_amount']
+            })
+
+    conn.close()
+    return render_template('home.html', children=children, earnings=earnings, combined_total=combined_total, earnings_over_time=earnings_over_time, last_chores=last_chores, goal_progress=goal_progress)
+
 
 @app.route('/add_quick_amount', methods=['POST'])
 def add_quick_amount():
@@ -481,57 +627,8 @@ def all_users():
 
     return render_template('all_users.html', users=users)
 
-@app.route('/home')
-def home():
-    conn = get_db_connection()
-    children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
-    
-    earnings = []
-    combined_total = 0
-    earnings_over_time = {}
-    last_chores = {}
-
-    for child in children:
-        child_id = child['id']
-        child_name = child['name']
-
-        total_earned = conn.execute(
-            'SELECT SUM(amount_earned) AS total FROM completed_chores WHERE user_id = ?',
-            (child_id,)
-        ).fetchone()['total']
-        
-        total_spent = conn.execute(
-            'SELECT SUM(amount_deducted) AS total FROM completed_expenses WHERE user_id = ?',
-            (child_id,)
-        ).fetchone()['total']
-
-        if total_earned is None:
-            total_earned = 0
-        if total_spent is None:
-            total_spent = 0
-
-        net_earnings = total_earned + total_spent  # total_spent is negative
-        combined_total += net_earnings
-        earnings.append({'name': child_name, 'total_earned': net_earnings})
-
-        earnings_over_time[child_name] = conn.execute(
-            'SELECT completion_date AS date, SUM(amount_earned) AS earnings FROM completed_chores WHERE user_id = ? GROUP BY completion_date ORDER BY completion_date DESC',
-            (child_id,)
-        ).fetchall()
-
-        last_chores[child_name] = conn.execute(
-            'SELECT chores.name, completed_chores.amount_earned, completed_chores.completion_date '
-            'FROM completed_chores '
-            'JOIN chores ON completed_chores.chore_id = chores.id '
-            'WHERE completed_chores.user_id = ? '
-            'ORDER BY completed_chores.completion_date DESC '
-            'LIMIT 5',
-            (child_id,)
-        ).fetchall()
-
-    conn.close()
-    return render_template('home.html', children=children, earnings=earnings, combined_total=combined_total, earnings_over_time=earnings_over_time, last_chores=last_chores)
 
 
 if __name__ == '__main__':
+    add_dummy_data()
     app.run(debug=True)

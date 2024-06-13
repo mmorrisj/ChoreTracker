@@ -47,8 +47,30 @@ CREATE TABLE completed_expenses (
     FOREIGN KEY (expense_id) REFERENCES expenses(id)
 );
 
+DROP TABLE IF EXISTS goals;
+CREATE TABLE goals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    total_amount REAL NOT NULL
+);
+
+-- Child goals table
+DROP TABLE IF EXISTS child_goals;
+CREATE TABLE child_goals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    child_id INTEGER NOT NULL,
+    goal_id INTEGER NOT NULL,
+    FOREIGN KEY (child_id) REFERENCES users(id),
+    FOREIGN KEY (goal_id) REFERENCES goals(id)
+);
 
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('Act of Kindness', 1, 'preset', 'Any');
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('5 Minute Helpfulness', 5, 'preset', 'Any');
 INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES ('10 Minute Helpfulness', 10, 'preset', 'Any');
-
+INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES 
+(2, 1, 5.0, '2024-06-01'),
+(2, 2, 2.5, '2024-06-02'),
+(3, 1, 3.0, '2024-06-03'),
+(3, 2, 4.0, '2024-06-04'),
+(4, 1, 1.0, '2024-06-05'),
+(4, 2, 2.0, '2024-06-06');

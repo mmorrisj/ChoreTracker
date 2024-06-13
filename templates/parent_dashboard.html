@@ -2,7 +2,8 @@
 <html>
 <head>
     <title>Parent Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -14,17 +15,16 @@
         {% endfor %}
         <h2>Children's Net Earnings</h2>
         <canvas id="myChart" width="400" height="100"></canvas>
-
         
+        <h2>Earnings Over Time</h2>
+        <canvas id="lineChart" width="400" height="100"></canvas>
+
         <a href="{{ url_for('settings') }}" class="button-link">Settings</a>
-    
+        <a href="{{ url_for('home') }}" class="button-link">Home</a>
     </div>
 
-    <!-- Include Chart.js and the plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script>
-        // Get data from the server-side template rendering
+        // Data for bar chart
         const categories = {{ earnings|map(attribute='name')|list|safe }};
         const values = {{ earnings|map(attribute='total_earned')|list|safe }};
 
@@ -42,32 +42,49 @@
                 }]
             },
             options: {
-                indexAxis: 'y', // This makes the chart horizontal
+                indexAxis: 'y',
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 100 // Sets the maximum value of the x-axis
+                        max: 100
                     }
                 },
-                barThickness: 25, // Adjust this value to make bars thinner
+                barThickness: 25,
                 plugins: {
                     legend: {
                         display: false
-                    },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'right',
-                        formatter: function(value, context) {
-                            return '$' + value.toFixed(2);
-                        },
-                        color: '#000',
-                        font: {
-                            weight: 'bold'
-                        }
                     }
                 }
+            }
+        });
+
+        // Data for line chart
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        const lineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: {{ dates|tojson }},
+                datasets: [{
+                    label: 'Total Earnings Over Time ($)',
+                    data: {{ earnings_data|tojson }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    fill: true
+                }]
             },
-            plugins: [ChartDataLabels]
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                }
+            }
         });
     </script>
 </body>

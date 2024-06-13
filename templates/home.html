@@ -53,6 +53,21 @@
         canvas {
             margin-bottom: 20px;
         }
+        .progress {
+            height: 20px;
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #76c7c0;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+        }
     </style>
 </head>
 <body>
@@ -107,6 +122,21 @@
                         <li>{{ chore['completion_date'] }} - {{ chore['name'] }}: ${{ chore['amount_earned'] }}</li>
                     {% endfor %}
                 </ul>
+            {% endfor %}
+        </div>
+
+        <div class="child-section">
+            <h2>Goals Progress</h2>
+            {% for child, goals in goals_progress.items() %}
+                <h3>{{ child }}</h3>
+                {% for goal in goals %}
+                    <p>{{ goal['name'] }}: ${{ goal['amount_saved'] }} / ${{ goal['total_amount'] }}</p>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ (goal['amount_saved'] / goal['total_amount']) * 100 }}%;">
+                            {{ ((goal['amount_saved'] / goal['total_amount']) * 100) | round(2) }}%
+                        </div>
+                    </div>
+                {% endfor %}
             {% endfor %}
         </div>
     </div>
