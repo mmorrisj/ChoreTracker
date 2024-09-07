@@ -173,6 +173,8 @@ def register():
 
     return render_template('register.html')
 
+
+
 @app.route('/parent_dashboard')
 def parent_dashboard():
     if 'user_role' not in session or session['user_role'] != 'parent':
@@ -197,10 +199,12 @@ def parent_dashboard():
             total_spent = 0
 
         net_earnings = total_earned + total_spent  # total_spent is negative
+        # Fetch recent activities for the new feature
+        recent_activities = get_recent_activities(conn)    
 
         earnings.append({'name': child['name'], 'total_earned': net_earnings})
     conn.close()
-    return render_template('parent_dashboard.html', children=children, earnings=earnings)
+    return render_template('parent_dashboard.html', children=children, earnings=earnings, recent_activities=recent_activities)
 
 
 @app.route('/add_preset_chore', methods=['GET', 'POST'])
@@ -222,6 +226,19 @@ def add_preset_chore():
         return redirect(url_for('settings'))
     
     return render_template('add_preset_chore.html')
+
+def get_recent_activities(db_connection, limit=10):
+    query = """
+    SELECT child_name, chore_name, completed_at, amount_earned
+    FROM activities
+    ORDER BY completed_at DESC
+    LIMIT ?
+    """
+    cursor = db_connection.cursor()
+    cursor.execute(query, (limit,))
+    return cursor.fetchall()
+
+
 
 def calculate_earnings(minutes):
     hourly_rate = 10.0

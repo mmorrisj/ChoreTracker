@@ -70,5 +70,27 @@
             plugins: [ChartDataLabels]
         });
     </script>
+    !-- New Recent Activities Section -->
+    <h2>Recent Activities</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Child</th>
+          <th>Chore</th>
+          <th>Completed At</th>
+          <th>Amount Earned</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for activity in recent_activities %}
+        <tr>
+          <td>{{ activity.child_name }}</td>
+          <td>{{ activity.chore_name }}</td>
+          <td>{{ activity.completed_at }}</td>
+          <td>{{ activity.amount_earned }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 </body>
 </html>
