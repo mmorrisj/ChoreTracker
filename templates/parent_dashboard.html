@@ -12,24 +12,28 @@
                 {{ child['name'] }}
             </button>
         {% endfor %}
+        
         <h2>Children's Net Earnings</h2>
         <canvas id="myChart" width="400" height="100"></canvas>
 
+        <h2>Chore Completion in Last 30 Days</h2>
+        <div class="chart-container">
+            <canvas id="completedChoresTimelineChart" width="400" height="200"></canvas>
+        </div>
         
         <a href="{{ url_for('settings') }}" class="button-link">Settings</a>
-    
     </div>
 
     <!-- Include Chart.js and the plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script>
-        // Get data from the server-side template rendering
+        // Earnings chart data
         const categories = {{ earnings|map(attribute='name')|list|safe }};
         const values = {{ earnings|map(attribute='total_earned')|list|safe }};
+        const earningsCtx = document.getElementById('myChart').getContext('2d');
 
-        const ctx = document.getElementById('myChart').getContext('2d');
-        const myChart = new Chart(ctx, {
+        const earningsChart = new Chart(earningsCtx, {
             type: 'bar',
             data: {
                 labels: categories,
@@ -42,33 +46,78 @@
                 }]
             },
             options: {
-                indexAxis: 'y', // This makes the chart horizontal
+                indexAxis: 'y',
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 100 // Sets the maximum value of the x-axis
+                        max: 100
                     }
                 },
-                barThickness: 25, // Adjust this value to make bars thinner
+                barThickness: 25,
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: false },
                     datalabels: {
                         anchor: 'end',
                         align: 'right',
-                        formatter: function(value, context) {
-                            return '$' + value.toFixed(2);
-                        },
+                        formatter: (value) => '$' + value.toFixed(2),
                         color: '#000',
-                        font: {
-                            weight: 'bold'
-                        }
+                        font: { weight: 'bold' }
                     }
                 }
             },
             plugins: [ChartDataLabels]
         });
+
+        // Fetch completed chores data for all children and display a timeline chart
+        async function fetchChoreTimeline() {
+            const response = await fetch(`/api/completed_chores_timeline`);
+            return await response.json();
+        }
+
+        async function renderChoreCompletionTimelineChart() {
+            const data = await fetchChoreTimeline();
+
+            const childrenNames = Object.keys(data); // Child names as keys
+            const datasets = childrenNames.map(child => ({
+                label: child,
+                data: data[child].map(entry => entry.count),
+                borderColor: getRandomColor(),
+                fill: false
+            }));
+
+            const labels = data[childrenNames[0]].map(entry => entry.date); // Using dates from the first child’s data
+
+            const timelineChartCtx = document.getElementById('completedChoresTimelineChart').getContext('2d');
+            new Chart(timelineChartCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: 'Date' } },
+                        y: { title: { display: true, text: 'Chores Completed' } }
+                    },
+                    plugins: {
+                        legend: { display: true }
+                    }
+                }
+            });
+        }
+
+        // Generate random color for each child dataset
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Initialize the chore completion timeline chart on page load
+        document.addEventListener('DOMContentLoaded', renderChoreCompletionTimelineChart);
     </script>
 </body>
 </html>

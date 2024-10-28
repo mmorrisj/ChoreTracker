@@ -1,0 +1,8 @@
+README.md
+setup.py
+ChoreTracker.egg-info/PKG-INFO
+ChoreTracker.egg-info/SOURCES.txt
+ChoreTracker.egg-info/dependency_links.txt
+ChoreTracker.egg-info/entry_points.txt
+ChoreTracker.egg-info/requires.txt
+ChoreTracker.egg-info/top_level.txt

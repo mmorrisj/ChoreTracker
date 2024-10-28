@@ -1,0 +1,7 @@
+Flask
+SQLAlchemy
+
+[dev]
+pytest
+flake8
+black
