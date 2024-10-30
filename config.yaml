@@ -3,4 +3,5 @@ children:
   - Evelyn
   - Lucy
 chores:
-  
+db: "chore_chart.db"  
+schema: "schema.sql"

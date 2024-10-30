@@ -10,7 +10,7 @@
 
         <div class="section">
             <h2>Add Preset Chore</h2>
-            <form action="{{ url_for('add_preset_chore') }}" method="post">
+            <form action="{{ url_for('chore.add_preset_chore') }}" method="post">
                 <div class="form-group">
                     <label for="chore_name">Chore Name:</label>
                     <input type="text" name="chore_name" id="chore_name" required>
@@ -56,7 +56,7 @@
                 </tbody>
             </table>
             <h2>Remove Chore</h2>
-            <form action="{{ url_for('remove_chore') }}" method="post">
+            <form action="{{ url_for('chore.remove_chore') }}" method="post">
                 <input type="number" name="chore_id" placeholder="Chore ID">
                 <button type="submit">Remove Chore</button>
             </form>
@@ -83,7 +83,7 @@
                 </tbody>
             </table>
             <h2>Remove User</h2>
-            <form action="{{ url_for('remove_user') }}" method="post">
+            <form action="{{ url_for('auth.remove_user') }}" method="post">
                 <input type="number" name="user_id" placeholder="User ID">
                 <button type="submit">Remove User</button>
             </form>
@@ -91,16 +91,16 @@
 
         <div class="section">
             <h2>Clear Data</h2>
-            <form action="{{ url_for('clear_all_preset_chores') }}" method="post">
+            <form action="{{ url_for('chore.clear_all_preset_chores') }}" method="post">
                 <button type="submit">Clear All Preset Chores</button>
             </form>
-            <form action="{{ url_for('clear_all_completed_chores') }}" method="post">
+            <form action="{{ url_for('chore.clear_all_completed_chores') }}" method="post">
                 <button type="submit">Clear All Completed Chores</button>
             </form>
-            <form action="{{ url_for('clear_all_completed_expenses') }}" method="post">
+            <form action="{{ url_for('chore.clear_all_completed_expenses') }}" method="post">
                 <button type="submit">Clear All Completed Expenses</button>
             </form>
-            <form action="{{ url_for('clear_all_funds_and_chores') }}" method="post">
+            <form action="{{ url_for('chore.clear_all_funds_and_chores') }}" method="post">
                 <button type="submit">Clear All Funds and Chores</button>
             </form>
         </div>

@@ -201,6 +201,6 @@
     </form>
 
     <!-- Link to manage spending page for the same child -->
-    <a href="{{ url_for('manage_spending', child_id=child['id']) }}" class="spending-link">Manage Spending for {{ child['name'] }}</a>
+    <a href="{{ url_for('chore.manage_spending', child_id=child['id']) }}" class="spending-link">Manage Spending for {{ child['name'] }}</a>
 </body>
 </html>
