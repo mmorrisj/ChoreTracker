@@ -1,7 +1,8 @@
 import click
 from flask import current_app
 from werkzeug.security import generate_password_hash
-from utils import get_db_connection, Config 
+from utils import get_db_connection, Config , ChoreData, ChoreActions, UserActions
+from datetime import date
 
 cfg = Config.from_yaml()
 
@@ -61,6 +62,30 @@ def register_cli_commands(app):
         conn.commit()
         conn.close()
         click.echo(f'Cleared preset chore: {chore_name}')
+
+    @app.cli.command('add-funds')
+    @click.option('--child-id', type=int, default=None, help="ID of the child")
+    @click.option('--child-name', type=str, default=None, help="Name of the child")
+    @click.option('--funds', type=float)
+    def add_child_funds(child_id,child_name,funds):
+        conn = get_db_connection()
+        completion_date = date.today().isoformat()
+        action = ChoreActions(conn)
+        users = UserActions(conn)
+        
+        if child_id:
+            id_ = child_id
+        elif child_name:
+            id_ = users.fetch_user_id(username=child_name)
+        else:
+            return 'User Not Found', 404
+        chore_name = f'{id_}_Parent_Funded_{funds}'
+        action.add_chore(chore_name,action.calculate_minutes_for_earnings(funds),'Any')
+        chore_id = action.fetch_choreid(chore_name,'custom','Any')
+        conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
+                             (id_, chore_id, funds, completion_date))
+        conn.commit()
+        conn.close()
 
     @app.cli.command('init-chores')
     def init_preset_chores():

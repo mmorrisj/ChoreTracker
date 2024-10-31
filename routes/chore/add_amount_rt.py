@@ -11,4 +11,4 @@ def add_quick_amount():
     if child_id and amount:
         conn.execute('UPDATE accounts SET balance = balance + ? WHERE child_id = ?', (amount, child_id))
         conn.commit()
-    return redirect(url_for('manage_chore'))
+    return redirect(url_for('ui.parent_dashboard'))

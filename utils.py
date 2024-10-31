@@ -66,10 +66,6 @@ class ChoreData:
     def __init__(self,conn):
         self.conn = conn
         self.children = None
-        self.earnings = []
-        self.morning_chores = []
-        self.afternoon_chores = []
-        self.evening_chores = []
 
     def fetch_user(self,username):
         return self.conn.execute('SELECT * FROM users WHERE name = ? AND role IN ("parent", "child")', (username,)).fetchone()
@@ -90,29 +86,21 @@ class ChoreData:
         self.afternoon_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
         self.evening_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
 
+    def child_behavior_deductions(self,child_id):
+        return self.conn.execute(
+            'SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned < 0',(child_id,)).fetchone()[0]
+    
+    def child_expenses(self,child_id):
+        return self.conn.execute('SELECT COALESCE(SUM(amount_deducted), 0) FROM completed_expenses WHERE user_id = ?', (child_id,)).fetchone()[0]
+    
+    def child_earnings(self,child_id):
+        return self.conn.execute('SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned > 0', (child_id,)).fetchone()[0]
+
     def calculate_net_earnings(self,child_id):
-        # Sum positive earnings from completed chores
-        self.total_earned = self.conn.execute(
-            'SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned > 0',
-            (child_id,)
-        ).fetchone()[0]
-
-        # Sum negative deductions from completed chores (behavior actions)
-        self.behavior_deductions = self.conn.execute(
-            'SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned < 0',
-            (child_id,)
-        ).fetchone()[0]
-
-        # Sum deductions from completed expenses
-        self.total_expenses = self.conn.execute(
-            'SELECT COALESCE(SUM(amount_deducted), 0) FROM completed_expenses WHERE user_id = ?',
-            (child_id,)
-        ).fetchone()[0]
-
         # Calculate net earnings
-        self.net_earnings = self.total_earned + (self.behavior_deductions or 0) - abs(self.total_expenses or 0)
+        self.net_earnings = self.child_earnings(child_id) + (self.child_behavior_deductions(child_id) or 0) - abs(self.child_expenses(child_id) or 0)
         # Optional: print debug information for tracing
-        print(f"Child ID: {child_id}, Earned: {self.total_earned}, Behavior Deductions: {self.behavior_deductions}, Expenses: {self.total_expenses}, Net: {self.net_earnings}")
+        print(f"Child ID: {child_id}, Earned: {self.child_earnings(child_id)}, Behavior Deductions: {self.child_behavior_deductions(child_id)}, Expenses: {self.child_expenses(child_id)}, Net: {self.net_earnings}")
         return self.net_earnings
     
     def get_earnings_report(self):
@@ -170,7 +158,54 @@ class ChoreActions:
         self.conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', 
                           (chore_name, chore_time, chore_timeofday))
         
-            
-         
+    def calculate_minutes_for_earnings(self,earnings):
+        return round((earnings * 60) / cfg.hourly_rate)
 
-        
+
+class UserActions:
+    def __init__(self,conn):
+        self.conn =  conn
+    def add_user(self,username, password, role):
+        hashed_password = generate_password_hash(password, method='sha256')
+        self.conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
+        self.conn.commit()
+
+    def remove_user(self,user_id=None,username=None):
+        if user_id:
+            # Check if the user exists
+            user = self.conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+            if not user:
+                conn.close()
+                return 'User not found', 404
+            self.conn.execute('DELETE FROM completed_chores WHERE user_id = ?', (user['id'],))
+            self.conn.execute('DELETE FROM completed_expenses WHERE user_id = ?', (user['id'],))
+            self.conn.execute('DELETE FROM users WHERE id = ?', (user['id'],))
+            self.conn.commit()
+        if username:
+            user = self.conn.execute('SELECT * FROM users WHERE name = ?', (username,)).fetchone()
+            if not user:
+                conn.close()
+                return 'User not found', 404
+            self.conn.execute('DELETE FROM completed_chores WHERE user_id = ?', (user['id'],))
+            self.conn.execute('DELETE FROM completed_expenses WHERE user_id = ?', (user['id'],))
+            self.conn.execute('DELETE FROM users WHERE id = ?', (user['id'],))
+            self.conn.commit()
+    def fetch_user(self,username=None,user_id=None):
+        if username:
+            user = self.conn.execute('SELECT * FROM users WHERE name = ?', (username,)).fetchone()
+        elif user_id:
+            user = self.conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+        else:
+            return 'User not found', 404
+        return user
+    def fetch_user_id(self,username=None,user_id=None):
+        user =  self.fetch_user(username,user_id)
+        return user['id']
+    def fetch_user_name(self,username=None,user_id=None):
+        user =  self.fetch_user(username,user_id)
+        return user['name']
+
+
+            
+
+            
