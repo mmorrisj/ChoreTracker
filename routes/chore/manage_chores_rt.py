@@ -46,20 +46,20 @@ def manage_chores(child_id):
             # Handle quick submit actions
             if 'quick_submit' in request.form:
                 quick_submit_chore = request.form['quick_submit']
+                print(quick_submit_chore)
                 if quick_submit_chore in (cfg.behavior.keys()):
                     action.behavior_deduction(child_id,quick_submit_chore,completion_date)
                 else:
                     quick_id = action.fetch_choreid(quick_submit_chore,'preset','Any')
                     action.complete_chore(child_id,quick_id,completion_date)
         
+            conn.commit()
             earnings = data.get_earnings_report()
             
-            conn.commit()
-            
             return render_template('parent_dashboard.html', children=children, earnings=earnings)
-            
+    conn.close()
         # return redirect(url_for('ui.parent_dashboard'))
-    # conn.close()
+    
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores, today_date=date.today().isoformat())
 
 def remove_chore():

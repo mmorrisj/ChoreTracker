@@ -71,6 +71,9 @@ class ChoreData:
         self.afternoon_chores = []
         self.evening_chores = []
 
+    def fetch_user(self,username):
+        return self.conn.execute('SELECT * FROM users WHERE name = ? AND role IN ("parent", "child")', (username,)).fetchone()
+    
     def fetch_children(self):
         self.children = self.conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
         return self.children
@@ -139,6 +142,7 @@ class ChoreActions:
     
     def fetch_chore_name(self,chore_id):
         return self.conn.execute('SELECT name FROM chores WHERE id = ?', (chore_id)).fetchone()['name']
+    
     def fetch_chores(self):
         # Fetch chore lists by time of day
         self.morning_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
@@ -147,7 +151,7 @@ class ChoreActions:
         self.all_chores = self.conn.execute('SELECT * FROM chores').fetchall()
     
     def fetch_choreid(self,chore_name,chore_type,chore_timeofday):
-        return self.conn.execute('SELECT id FROM chores WHERE name = ? AND type = ? AND time_of_day = ?', (chore_name,chore_type, chore_timeofday)).fetchone()['id']
+        return self.conn.execute('SELECT id FROM chores WHERE name = ? AND type = ? AND time_of_day = ?', (chore_name,chore_type,chore_timeofday)).fetchone()['id']
     
     def complete_chore(self,chore_id,child_id,completion_date):
          minutes = self.fetch_minutes(chore_id)

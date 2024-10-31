@@ -24,17 +24,22 @@ register_cli_commands(app)
 
 from datetime import datetime, timedelta
 from flask import jsonify
+from utils import ChoreData, get_db_connection
 
 @app.route('/')
 def index():
     if 'user_role' in session:
         if session['user_role'] == 'parent':
-            return redirect(url_for('ui.parent_dashboard'))
+            conn = get_db_connection()
+            data = ChoreData(conn)
+            children = data.fetch_children()
+            earnings = data.get_earnings_report()
+            conn.close()
+            return render_template('parent_dashboard.html', children=children, earnings=earnings)
+            # return redirect(url_for('ui.parent_dashboard'))
         elif session['user_role'] == 'child':
             return redirect(url_for('ui.children_dashboard'))
     return redirect(url_for('auth.login'))
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
