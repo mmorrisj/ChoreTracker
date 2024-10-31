@@ -1,11 +1,13 @@
 import click
 from flask import current_app
 from werkzeug.security import generate_password_hash
-from utils import get_db_connection, init_db
+from utils import get_db_connection, Config 
+
+cfg = Config.from_yaml()
 
 
 def register_cli_commands(app):
-    @app.cli.command('clear_earnings')
+    @app.cli.command('clear-earnings')
     def clear_completed_chores():
         """Clear all completed chores."""
         conn = get_db_connection()
@@ -14,7 +16,7 @@ def register_cli_commands(app):
         conn.close()
         click.echo('Cleared all completed chores.')
 
-    @app.cli.command('clear_expenses')
+    @app.cli.command('clear-expenses')
     def clear_completed_expenses():
         """Clear all completed expenses."""
         conn = get_db_connection()
@@ -23,7 +25,7 @@ def register_cli_commands(app):
         conn.close()
         click.echo('Cleared all completed expenses.')
 
-    @app.cli.command('clear_all_funds')
+    @app.cli.command('clear-funds')
     def clear_all_funds_and_chores():
         """Clear all completed chores and expenses."""
         conn = get_db_connection()
@@ -33,13 +35,15 @@ def register_cli_commands(app):
         conn.close()
         click.echo('Cleared all completed chores and expenses.')
         
-    @app.cli.command('initdb')
+    @app.cli.command('init-db')
     def initdb_command():
-        """Initialize the database."""
-        init_db()
+        conn = get_db_connection()
+        with app.open_resource(cfg.schema) as f:
+            conn.executescript(f.read().decode('utf8'))
+        conn.close()
         click.echo('Initialized the database.')
 
-    @app.cli.command('clear_all_chores')
+    @app.cli.command('clear-chores')
     def clear_preset_chores():
         """Clear all preset chores."""
         conn = get_db_connection()
@@ -48,7 +52,7 @@ def register_cli_commands(app):
         conn.close()
         click.echo('Cleared all preset chores.')
 
-    @app.cli.command('clear_chore')
+    @app.cli.command('clear-chore')
     @click.argument('chore_name')
     def clear_preset_chore(chore_name):
         """Clear a specific preset chore by name."""
@@ -58,7 +62,7 @@ def register_cli_commands(app):
         conn.close()
         click.echo(f'Cleared preset chore: {chore_name}')
 
-    @app.cli.command('init_preset_chores')
+    @app.cli.command('init-chores')
     def init_preset_chores():
         """Initialize preset chores."""
         chores = [
@@ -79,6 +83,8 @@ def register_cli_commands(app):
             ('Get in Pajamas', 1, 'preset', 'Evening'),
             ('Reading by 830PM', 1, 'preset', 'Evening'),
             ('Lights Out by 9PM', 1, 'preset', 'Evening'),
+            ('Bad Behavior',-1,'preset','Any'),
+            ('Very Bad Behavior',-5,'preset','Any')
             # Add more preset chores as needed
         ]
 
@@ -89,7 +95,7 @@ def register_cli_commands(app):
         conn.close()
         click.echo('Initialized preset chores.')
 
-    @app.cli.command('init_users')
+    @app.cli.command('init-users')
     def init_users():
         """Initialize parent and child users."""
         users = [

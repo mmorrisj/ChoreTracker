@@ -1,88 +1,65 @@
 from routes.chore import chore
 from flask import Flask, render_template, request, redirect, session, url_for
-from utils import get_db_connection, calculate_earnings
+from utils import get_db_connection,Config, ChoreData, ChoreActions, calculate_earnings
 from datetime import date
+import sqlite3
+
+cfg = Config.from_yaml()
 
 @chore.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
 def manage_chores(child_id):
     if 'user_role' not in session or session['user_role'] != 'parent':
         return redirect(url_for('auth.login'))
+    with sqlite3.connect(cfg.db, timeout=5.0) as conn:
+        conn.row_factory = sqlite3.Row
+        # Load Chore Data
+        data = ChoreData(conn)
+        data.fetch_chores()
+        morning_chores = data.morning_chores
+        afternoon_chores = data.afternoon_chores
+        evening_chores = data.evening_chores
+        child = data.fetch_child(child_id)
+        children = data.fetch_children()
 
-    conn = get_db_connection()
-    child = conn.execute('SELECT id, name FROM users WHERE id = ?', (child_id,)).fetchone()
-    if not child:
-        return 'Child not found', 404
-
-    # Fetch chore lists by time of day
-    morning_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
-    afternoon_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
-    evening_chores = conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
-
-    if request.method == 'POST':
-        completion_date = request.form.get('completion_date', date.today().isoformat())
-        
-        # Handle preset chores
-        if 'preset_chores' in request.form:
-            for chore_id in request.form.getlist('preset_chores'):
-                preset_minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
-                amount = calculate_earnings(preset_minutes)
-                conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                             (child_id, chore_id, amount, completion_date))
-        
-        # Handle custom chores
-        if request.form.get('custom_chore') and request.form.get('custom_minutes') and request.form.get('custom_time_of_day'):
-            custom_chore = request.form['custom_chore']
-            custom_minutes = float(request.form['custom_minutes'])
-            custom_time_of_day = request.form['custom_time_of_day']
-            amount = calculate_earnings(custom_minutes)
-            conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', (custom_chore, custom_minutes, custom_time_of_day))
-            custom_chore_id = conn.execute('SELECT id FROM chores WHERE name = ? AND type = "custom" AND time_of_day = ?', (custom_chore, custom_time_of_day)).fetchone()['id']
-            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                         (child_id, custom_chore_id, amount, completion_date))
-        
-        # Handle quick submit actions
-        if 'quick_submit' in request.form:
-            quick_submit_chore = request.form['quick_submit']
-            amount = 0.25  # Default amount
-
-            if quick_submit_chore == '5 Minute Helpfulness':
-                amount = 1.00
-            elif quick_submit_chore == '10 Minute Helpfulness':
-                amount = 2.00
-            elif quick_submit_chore == 'Bad Behavior':
-                amount = -0.25
-            elif quick_submit_chore == 'Very Bad Behavior':
-                amount = -1.00
-
-            conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
-                         (child_id, None, amount, completion_date))
-
-        conn.commit()
-
-        # Fetch updated net earnings for each child
-        children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()
-        earnings = []
-        for child in children:
-            # Calculate total earnings from completed chores
-            total_earned = conn.execute(
-                'SELECT SUM(amount_earned) FROM completed_chores WHERE user_id = ?',
-                (child['id'],)
-            ).fetchone()[0] or 0
+        # Fetch chore lists by time of day
+        if request.method == 'POST':
+            action = ChoreActions(conn)
+            completion_date = request.form.get('completion_date', date.today().isoformat())
             
-            # Calculate total deductions from completed expenses
-            total_deductions = conn.execute(
-                'SELECT SUM(amount_deducted) FROM completed_expenses WHERE user_id = ?',
-                (child['id'],)
-            ).fetchone()[0] or 0
-            
-            # Calculate net earnings (earnings - deductions)
-            net_earnings = total_earned - total_deductions
-            earnings.append({'name': child['name'], 'net_earnings': net_earnings})
+            # Handle preset chores
+            if 'preset_chores' in request.form:
+                for chore_id in request.form.getlist('preset_chores'):
+                    action.complete_chore(child_id,chore_id,completion_date)
+                    
+            # Handle custom chores
+            if request.form.get('custom_chore') and request.form.get('custom_minutes') and request.form.get('custom_time_of_day'):
+                # Pull chore info
+                custom_chore = request.form['custom_chore']
+                custom_minutes = float(request.form['custom_minutes'])
+                custom_time_of_day = request.form['custom_time_of_day']
+                # Add chore to db
+                action.add_chore(custom_chore,custom_minutes,custom_time_of_day)   
+                # Add to completed chores
+                custom_chore_id = action.fetch_choreid(custom_chore,custom_time_of_day)
+                action.complete_chore(child_id,custom_chore_id,completion_date)
+                
+            # Handle quick submit actions
+            if 'quick_submit' in request.form:
+                quick_submit_chore = request.form['quick_submit']
+                if quick_submit_chore in (cfg.behavior.keys()):
+                    action.behavior_deduction(child_id,quick_submit_chore,completion_date)
+                else:
+                    quick_id = action.fetch_choreid(quick_submit_chore,'preset','Any')
+                    action.complete_chore(child_id,quick_id,completion_date)
         
-        conn.close()
-        return render_template('parent_dashboard.html', children=children, earnings=earnings)
-
-    conn.close()
+            earnings = data.get_earnings_report()
+            
+            conn.commit()
+            
+            return render_template('parent_dashboard.html', children=children, earnings=earnings)
+            
+        # return redirect(url_for('ui.parent_dashboard'))
+    # conn.close()
     return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores, today_date=date.today().isoformat())
 
 def remove_chore():

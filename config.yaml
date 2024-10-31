@@ -5,3 +5,7 @@ children:
 chores:
 db: "chore_chart.db"  
 schema: "schema.sql"
+behavior:
+  'Bad Behavior': -.25
+  'Very Bad Behavior': -1
+
