@@ -18,7 +18,15 @@ def manage_chores(child_id):
         morning_chores = data.morning_chores
         afternoon_chores = data.afternoon_chores
         evening_chores = data.evening_chores
+        # Calculate values based on hourly_rate
+        kindness_value = f"{calculate_earnings(1): .2f}"
+        good_behavior_value = f"{calculate_earnings(5): .2f}"
+        five_min_helpfulness = f"{calculate_earnings(5): .2f}"
+        ten_min_helpfulness = f"{calculate_earnings(10): .2f}"
+        bad_behavior = f"{calculate_earnings(-1): .2f}"
+        very_bad_behavior = f"{calculate_earnings(-5): .2f}"
         child = data.fetch_child(child_id)
+        print(dict(child))
         children = data.fetch_children()
 
         # Fetch chore lists by time of day
@@ -51,16 +59,30 @@ def manage_chores(child_id):
                     action.behavior_deduction(child_id,quick_submit_chore,completion_date)
                 else:
                     quick_id = action.fetch_choreid(quick_submit_chore,'preset','Any')
-                    action.complete_chore(child_id,quick_id,completion_date)
-        
+                    print(quick_id)
+                    action.complete_chore(quick_id, child_id,completion_date)
+
             conn.commit()
             earnings = data.get_earnings_report()
             
-            return render_template('parent_dashboard.html', children=children, earnings=earnings)
+            return render_template('parent_dashboard.html', 
+                                   children=children, 
+                                   earnings=earnings,
+                                   )
     conn.close()
         # return redirect(url_for('ui.parent_dashboard'))
     
-    return render_template('manage_chores.html', child=child, morning_chores=morning_chores, afternoon_chores=afternoon_chores, evening_chores=evening_chores, today_date=date.today().isoformat())
+    return render_template('manage_chores.html', child=child, 
+                           morning_chores=morning_chores, 
+                           afternoon_chores=afternoon_chores, 
+                           evening_chores=evening_chores, 
+                           today_date=date.today().isoformat(),
+                           kindness_value=kindness_value,
+                           good_behavior_value=good_behavior_value,
+                           five_min_helpfulness=five_min_helpfulness,
+                           ten_min_helpfulness=ten_min_helpfulness,
+                           bad_behavior=bad_behavior,
+                           very_bad_behavior=very_bad_behavior)
 
 def remove_chore():
     if 'user_role' not in session or session['user_role'] != 'parent':

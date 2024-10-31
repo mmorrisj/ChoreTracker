@@ -98,16 +98,16 @@
     <form method="post">
         <h2>Quick Submit</h2>
         <div class="quick-submit">
-            <button type="submit" name="quick_submit" value="Act of Kindness">Act of Kindness (+$0.25)</button>
-            <button type="submit" name="quick_submit" value="Good Behavior">Good Behavior (+$0.25)</button>
-            <button type="submit" name="quick_submit" value="5 Minute Helpfulness">5 Minute Helpfulness (+$1.00)</button>
-            <button type="submit" name="quick_submit" value="10 Minute Helpfulness">10 Minute Helpfulness (+$2.00)</button>
+            <button type="submit" name="quick_submit" value="Act of Kindness">Act of Kindness (${{ kindness_value }})</button>
+            <button type="submit" name="quick_submit" value="Good Behavior">Good Behavior (${{ good_behavior_value }})</button>
+            <button type="submit" name="quick_submit" value="5 Minute Helpfulness">5 Minute Helpfulness (${{ five_min_helpfulness }})</button>
+            <button type="submit" name="quick_submit" value="10 Minute Helpfulness">10 Minute Helpfulness (${{ ten_min_helpfulness }})</button>
         </div>
 
         <h2>Poor Behavior</h2>
         <div class="poor-behavior">
-            <button type="submit" name="quick_submit" value="Bad Behavior">Bad Behavior (-$0.25)</button>
-            <button type="submit" name="quick_submit" value="Very Bad Behavior">Very Bad Behavior (-$1.00)</button>
+            <button type="submit" name="quick_submit" value="Bad Behavior">Bad Behavior (${{ bad_behavior }})</button>
+            <button type="submit" name="quick_submit" value="Very Bad Behavior">Very Bad Behavior (${{ very_bad_behavior }})</button>
         </div>
 
         <h2>Morning Chores</h2>

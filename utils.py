@@ -31,10 +31,10 @@ def get_db_connection():
     return conn
 
 def calculate_earnings(minutes):
-    hourly_rate = 10.0
-    minimum_rate = 0.25
-    earnings = max((minutes / 60) * hourly_rate, minimum_rate)
-    return round(earnings * 4) / 4  # Rounds to the nearest $0.25
+    if minutes < 0:
+        return min(float((minutes/60)* cfg.hourly_rate), float(cfg.minimum_deduct))
+    else:
+        return max((minutes / 60) * cfg.hourly_rate, cfg.minimum_rate)
 
 def calculate_net_earnings(child_id):
         conn = get_db_connection()
@@ -132,8 +132,8 @@ class ChoreActions:
         self.children = ChoreData(self.conn).fetch_children()
 
     def calculate_earnings(self,minutes):
-        hourly_rate = 10.0
-        minimum_rate = 0.25
+        hourly_rate = cfg.hourly_rate
+        minimum_rate = cfg.minimum_rate
         earnings = max((minutes / 60) * hourly_rate, minimum_rate)
         return round(earnings * 4) / 4  # Rounds to the nearest $0.25
     
@@ -156,8 +156,10 @@ class ChoreActions:
     def complete_chore(self,chore_id,child_id,completion_date):
          minutes = self.fetch_minutes(chore_id)
          amount_earned = self.calculate_earnings(minutes)
+         print(f"{child_id},{chore_id},{amount_earned},{completion_date}")
          self.conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                              (child_id, chore_id, amount_earned, completion_date))
+         print(f"{child_id},{chore_id},{amount_earned},{completion_date}")
          
     def behavior_deduction(self,child_id,deduction,completion_date):
         chore_id = self.fetch_choreid(deduction,'preset','Any')
