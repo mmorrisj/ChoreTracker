@@ -37,7 +37,7 @@ def manage_chores(child_id):
             # Handle preset chores
             if 'preset_chores' in request.form:
                 for chore_id in request.form.getlist('preset_chores'):
-                    action.complete_chore(child_id,chore_id,completion_date)
+                    action.complete_chore(chore_id,child_id,completion_date)
                     
             # Handle custom chores
             if request.form.get('custom_chore') and request.form.get('custom_minutes') and request.form.get('custom_time_of_day'):
