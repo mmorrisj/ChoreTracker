@@ -2,7 +2,9 @@ import click
 from flask import current_app
 from werkzeug.security import generate_password_hash
 from utils import get_db_connection, Config , ChoreData, ChoreActions, UserActions
-from datetime import date
+from datetime import date, datetime
+import shutil
+import os
 
 cfg = Config.from_yaml()
 
@@ -194,3 +196,29 @@ def register_cli_commands(app):
         finally:
             old_conn.close()
             new_conn.close()
+
+    @app.cli.command('init-all',help='Clear and initialize db')
+    def init_all():
+        initdb_command()
+        init_users()
+        init_preset_chores
+        print("initialize db, users, and preset chores")
+
+    @app.cli.command('backup-db')
+    def backup_db():
+        """Backup the chore_chart_db with a timestamp."""
+        db_path = cfg.db  # Path to the database file from the configuration
+        if not os.path.exists(db_path):
+            click.echo("Database file not found.")
+            return
+
+        # Generate a timestamp for the backup file
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = f"{db_path}_{timestamp}.backup"
+
+        # Copy the database to the backup location
+        try:
+            shutil.copy(db_path, backup_path)
+            click.echo(f"Database backed up to {backup_path}")
+        except IOError as e:
+            click.echo(f"Failed to backup the database: {e}")

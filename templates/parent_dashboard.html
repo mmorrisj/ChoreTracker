@@ -12,71 +12,82 @@
                 {{ child['name'] }}
             </button>
         {% endfor %}
-        
         <h2>Children's Net Earnings</h2>
-        <canvas id="myChart" width="400" height="100"></canvas>
-
+        <div class="chart-container">
+            <canvas id="myChart" width="400" height="100"></canvas>
+        </div>
+    
         <h2>Chore Completion in Last 30 Days</h2>
         <div class="chart-container">
             <canvas id="completedChoresTimelineChart" width="400" height="200"></canvas>
         </div>
         
         <a href="{{ url_for('ui.settings') }}" class="button-link">Settings</a>
+        
+        <h2>Earnings, Expenses, and Deductions Breakdown</h2>
+        <div class="chart-container">
+            <canvas id="earningsExpensesChart" width="400" height="200"></canvas>
+        </div>
     </div>
-
     <!-- Include Chart.js and the plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-    <script>
-        // Earnings chart data with net earnings
-        const categories = {{ earnings | map(attribute='name') | list | safe }};
-        const values = {{ earnings | map(attribute='net_earnings') | list | safe }};
-        
-        const earningsCtx = document.getElementById('myChart').getContext('2d');
 
-        const earningsChart = new Chart(earningsCtx, {
-            type: 'bar',
-            data: {
-                labels: categories,
-                datasets: [{
-                    label: 'Net Earnings ($)',
-                    data: values,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        max: 100
+    <!-- Net Earnings Chart -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const categories = {{ earnings | map(attribute='name') | list | safe }};
+            const values = {{ earnings | map(attribute='net_earnings') | list | safe }};
+            
+            const earningsCtx = document.getElementById('myChart').getContext('2d');
+            
+            new Chart(earningsCtx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'Net Earnings ($)',
+                        data: values,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    barThickness: 25,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'right',
+                            formatter: (value) => '$' + value.toFixed(2),
+                            color: '#000',
+                            font: { weight: 'bold' }
+                        }
                     }
                 },
-                barThickness: 25,
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        anchor: 'end',
-                        align: 'right',
-                        formatter: (value) => '$' + value.toFixed(2),
-                        color: '#000',
-                        font: { weight: 'bold' }
-                    }
-                }
-            },
-            plugins: [ChartDataLabels]
+                plugins: [ChartDataLabels]
+            });
         });
+    </script>
 
-        // Fetch completed chores data for all children and display a timeline chart
-        async function fetchChoreTimeline() {
-            const response = await fetch(`/api/completed_chores_timeline`);
-            return await response.json();
-        }
+    <!-- Timeline Chart -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            async function fetchChoreTimeline() {
+                const response = await fetch(`/api/completed_chores_timeline`);
+                return await response.json();
+            }
 
-        async function renderChoreCompletionTimelineChart() {
             const data = await fetchChoreTimeline();
+            if (!data) return;
 
             const childrenNames = Object.keys(data);
             const datasets = childrenNames.map(child => ({
@@ -105,20 +116,95 @@
                     }
                 }
             });
-        }
 
-        // Generate random color for each child dataset
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
+            // Helper function to generate random colors
+            function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
             }
-            return color;
-        }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            async function fetchEarningsData() {
+                const response = await fetch('/api/earnings_expenses_deductions');
+                if (!response.ok) throw new Error('Data fetch failed');
+                return await response.json();
+            }
 
-        // Initialize the chore completion timeline chart on page load
-        document.addEventListener('DOMContentLoaded', renderChoreCompletionTimelineChart);
+            const data = await fetchEarningsData();
+            if (!data) return;
+
+            const children = data.map(item => item.name);
+            const earnings = data.map(item => item.earnings);
+            const expenses = data.map(item => item.expenses);
+            const deductions = data.map(item => item.deductions);
+
+            const chartCtx = document.getElementById('earningsExpensesChart').getContext('2d');
+
+            new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: children,
+                    datasets: [
+                        {
+                            label: 'Earnings',
+                            data: earnings,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Expenses',
+                            data: expenses,
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Deductions',
+                            data: deductions,
+                            backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                            borderColor: 'rgba(255, 206, 86, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',  // Makes the bar chart horizontal
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Amount ($)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Children' },
+                            ticks: {
+                                autoSkip: false,
+                                font: { size: 10 }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true }
+                    },
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    }
+                }
+            });
+        });
     </script>
 </body>
 </html>
