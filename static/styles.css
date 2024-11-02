@@ -114,4 +114,41 @@ button {
 }
 button:hover {
     background-color: #c82333;
+.chart-container {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+@media (max-width: 768px) {
+    .chart-container {
+        padding: 10px; /* Reduce padding on smaller screens */
+    }
+
+    canvas {
+        width: 100% !important; /* Ensure canvas resizes on mobile */
+        height: auto !important;
+    }
+}.chart-container {
+    width: 100%;
+    max-width: 600px; /* Adjust to match the width of other charts */
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #ffffff; /* White background for a clean look */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        padding: 10px; /* Reduce padding on smaller screens */
+    }
+
+    canvas {
+        width: 100% !important; /* Ensure canvas resizes on mobile */
+        height: auto !important;
+    }
 }
