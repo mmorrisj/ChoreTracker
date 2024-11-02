@@ -141,7 +141,7 @@ def register_cli_commands(app):
                     click.echo(f'Child name {username} already exists. Skipping...')
                     continue
 
-            hashed_password = generate_password_hash(password, method='sha256')
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
             conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
         conn.commit()
         conn.close()
