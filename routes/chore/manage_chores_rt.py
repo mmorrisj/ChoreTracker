@@ -48,7 +48,7 @@ def manage_chores(child_id):
                 # Add chore to db
                 action.add_chore(custom_chore,custom_minutes,custom_time_of_day)   
                 # Add to completed chores
-                custom_chore_id = action.fetch_choreid(custom_chore,custom_minutes,custom_time_of_day)
+                custom_chore_id = action.fetch_choreid(custom_chore,'custom',custom_time_of_day)
                 action.complete_chore(custom_chore_id,child_id,completion_date)
                 
             # Handle quick submit actions
