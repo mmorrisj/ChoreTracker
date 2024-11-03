@@ -141,7 +141,7 @@
 
             const children = data.map(item => item.name);
             const earnings = data.map(item => item.earnings);
-            const expenses = data.map(item => item.expenses);
+            const expenses = data.map(item => Math.abs(item.expenses));
             const deductions = data.map(item => item.deductions);
 
             const chartCtx = document.getElementById('earningsExpensesChart').getContext('2d');
@@ -161,15 +161,15 @@
                         {
                             label: 'Expenses',
                             data: expenses,
-                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 206, 86, 0.6)',
+                            borderColor: 'rgba(255, 206, 86, 1)',
                             borderWidth: 1
                         },
                         {
                             label: 'Deductions',
                             data: deductions,
-                            backgroundColor: 'rgba(255, 206, 86, 0.6)',
-                            borderColor: 'rgba(255, 206, 86, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
                             borderWidth: 1
                         }
                     ]
