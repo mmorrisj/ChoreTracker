@@ -18,6 +18,8 @@ def manage_chores(child_id):
         morning_chores = data.morning_chores
         afternoon_chores = data.afternoon_chores
         evening_chores = data.evening_chores
+        data.fetch_recent_chores(child_id)  
+        recent_chores = data.recent_actions
         # Calculate values based on hourly_rate
         kindness_value = f"{calculate_earnings(1): .2f}"
         good_behavior_value = f"{calculate_earnings(5): .2f}"
@@ -73,6 +75,7 @@ def manage_chores(child_id):
         # return redirect(url_for('ui.parent_dashboard'))
     
     return render_template('manage_chores.html', child=child, 
+                           recent_chores = recent_chores,
                            morning_chores=morning_chores, 
                            afternoon_chores=afternoon_chores, 
                            evening_chores=evening_chores, 

@@ -86,6 +86,35 @@ class ChoreData:
         self.afternoon_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
         self.evening_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
 
+    def fetch_recent_chores(self,child_id):
+        self.recent_chores = self.conn.execute(
+            '''
+            SELECT c.name AS action, cc.amount_earned AS amount, cc.completion_date AS date
+            FROM completed_chores cc
+            JOIN chores c ON cc.chore_id = c.id
+            WHERE cc.user_id = ?
+            ORDER BY cc.completion_date DESC
+            LIMIT 10
+            ''',
+            (child_id,)
+        ).fetchall()
+
+        # Fetch recent completed expenses
+        self.recent_expenses = self.conn.execute(
+            '''
+            SELECT e.name AS action, ce.amount_deducted AS amount, ce.date AS date
+            FROM completed_expenses ce
+            JOIN expenses e ON ce.expense_id = e.id
+            WHERE ce.user_id = ?
+            ORDER BY ce.date DESC
+            LIMIT 10
+            ''',
+            (child_id,)
+        ).fetchall()
+
+        self.recent_actions = self.recent_chores + self.recent_expenses
+        self.recent_actions.sort(key=lambda x: x['date'], reverse=True) 
+
     def child_behavior_deductions(self,child_id):
         return self.conn.execute(
             'SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned < 0',(child_id,)).fetchone()[0]
