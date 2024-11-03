@@ -103,7 +103,7 @@ def remove_chore():
     conn.commit()
     conn.close()
 
-    return redirect(url_for('settings'))
+    return redirect(url_for('ui.settings'))
 
 @chore.route('/add_preset_chore', methods=['GET', 'POST'])
 def add_preset_chore():
