@@ -83,7 +83,8 @@ def manage_chores(child_id):
                            ten_min_helpfulness=ten_min_helpfulness,
                            bad_behavior=bad_behavior,
                            very_bad_behavior=very_bad_behavior)
-
+    
+@chore.route('/remove_chore', methods=['POST'])
 def remove_chore():
     if 'user_role' not in session or session['user_role'] != 'parent':
         return redirect(url_for('auth.login'))
