@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Manage Chores for {{ child['name'] }}</title>
-    <style>
+        <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
@@ -16,7 +16,7 @@
         h1, h2 {
             color: #333;
         }
-        form {
+        form, .table-container {
             width: 80%;
             max-width: 800px;
             background: white;
@@ -28,7 +28,6 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
         }
         th, td {
             border: 1px solid #ddd;
@@ -37,6 +36,15 @@
         }
         th {
             background-color: #f2f2f2;
+        }
+        tbody tr.even-row {
+            background-color: #f9f9f9;
+        }
+        tbody tr.odd-row {
+            background-color: #ffffff;
+        }
+        tbody tr:hover {
+            background-color: #e9e9e9;
         }
         label {
             display: inline-block;
@@ -99,7 +107,27 @@
 
     <h1>Manage Chores for {{ child['name'] }}</h1>
     <a href="{{ url_for('chore.manage_spending', child_id=child['id']) }}" class="spending-link">Manage Spending for {{ child['name'] }}</a>
-
+    <h2>Recent Actions for {{ child['name'] }}</h2>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Amount</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for action in recent_chores %}
+            <tr class="{% if loop.index0 % 2 == 0 %}even-row{% else %}odd-row{% endif %}">
+                <td>{{ action['action'] }}</td>
+                <td>{{ action['amount'] }}</td>
+                <td>{{ action['date'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
     <form method="post">
         <h2>Quick Submit</h2>
         <div class="quick-submit">
