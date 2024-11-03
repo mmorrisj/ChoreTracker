@@ -135,7 +135,46 @@
                 {% endfor %}
             </tbody>
         </table>
-
+        <h2>Afternoon Chores</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Chore</th>
+                    <th>Minutes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chore in afternoon_chores %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
+                        <label for="chore_{{ chore['id'] }}">{{ chore['name'] }}</label>
+                    </td>
+                    <td>{{ chore['preset_amount'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h2>Evening Chores</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Chore</th>
+                    <th>Minutes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for chore in evening_chores %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="preset_chores" value="{{ chore['id'] }}" id="chore_{{ chore['id'] }}">
+                        <label for="chore_{{ chore['id'] }}">{{ chore['name'] }}</label>
+                    </td>
+                    <td>{{ chore['preset_amount'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         <!-- Add additional sections for Afternoon Chores, Evening Chores, etc., as needed -->
 
         <h2>Completion Date</h2>
