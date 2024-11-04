@@ -114,8 +114,8 @@ def register_cli_commands(app):
             ('Very Bad Behavior',-5,'preset','Any'),
             ('Act of Kindness',1,'preset','Any'),
             ('Good Behavior',1,'preset','Any'),
-            ('5 Minute Helpfulness',5,'preset','Any),
-            ('10 Minute Helpfulness',10,'preset','Any),
+            ('5 Minute Helpfulness',5,'preset','Any'),
+            ('10 Minute Helpfulness',10,'preset','Any'),
             # Add more preset chores as needed
         ]
 
