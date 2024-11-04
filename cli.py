@@ -111,7 +111,11 @@ def register_cli_commands(app):
             ('Reading by 830PM', 1, 'preset', 'Evening'),
             ('Lights Out by 9PM', 1, 'preset', 'Evening'),
             ('Bad Behavior',-1,'preset','Any'),
-            ('Very Bad Behavior',-5,'preset','Any')
+            ('Very Bad Behavior',-5,'preset','Any'),
+            ('Act of Kindness',1,'preset','Any'),
+            ('Good Behavior',1,'preset','Any'),
+            ('5 Minute Helpfulness',5,'preset','Any),
+            ('10 Minute Helpfulness',10,'preset','Any),
             # Add more preset chores as needed
         ]
 
