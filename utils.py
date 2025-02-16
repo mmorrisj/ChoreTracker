@@ -234,6 +234,22 @@ class UserActions:
         user =  self.fetch_user(username,user_id)
         return user['name']
 
+def complete_chore(conn, child_id, chore_id, completion_date):
+    # Fetch the chore's preset amount of time
+    minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
+    
+    # Calculate earnings based on the preset amount of time
+    earnings = calculate_earnings(minutes)
+    
+    # Insert the completed chore into the completed_chores table
+    conn.execute(
+        'INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
+        (child_id, chore_id, earnings, completion_date)
+    )
+    conn.commit()
+
+    # Optional: print debug information for tracing
+    print(f"Chore {chore_id} completed by {child_id} on {completion_date}. Earnings: {earnings}")
 
             
 

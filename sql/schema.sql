@@ -33,8 +33,7 @@ CREATE TABLE IF NOT EXISTS completed_chores (
     FOREIGN KEY (chore_id) REFERENCES chores(id)
 );
 
-DROP TABLE IF EXISTS expenses;
-CREATE TABLE expenses (
+CREATE TABLE IF NOT EXISTS expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     amount REAL NOT NULL,
@@ -42,8 +41,7 @@ CREATE TABLE expenses (
 );
 
 -- Completed expenses table
-DROP TABLE IF EXISTS completed_expenses;
-CREATE TABLE completed_expenses (
+CREATE TABLE IF NOT EXISTS completed_expenses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     expense_id INTEGER,
@@ -51,6 +49,44 @@ CREATE TABLE completed_expenses (
     date DATE NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (expense_id) REFERENCES expenses(id)
+);
+
+
+CREATE TABLE IF NOT EXISTS to_do (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    assigned TEXT NOT NULL,
+    time REAL NOT NULL,
+    type TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS completed_to_do (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    to_do_id INTEGER,
+    time REAL NOT NULL,
+    amount_earned REAL NOT NULL,
+    completion_date DATE NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (to_do_id) REFERENCES to_do(id)
+);
+
+CREATE TABLE IF NOT EXISTS open_chores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,,
+    time REAL NOT NULL,
+    type TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS completed_open_chores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    open_chore_id INTEGER,
+    time REAL NOT NULL,
+    amount_earned REAL NOT NULL,
+    completion_date DATE NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (open_chore_id) REFERENCES open_chores(id)
 );
 
 INSERT INTO users (name, role, password) VALUES ('Virginia', 'child', 'virginia');
@@ -70,4 +106,31 @@ INSERT INTO behaviors (name, amount, type) VALUES ('Very Bad Behavior', -1, 'bad
 INSERT INTO chores (name,assigned,time,type) VALUES ('20 minute reading','Evelyn', 20, 'school');
 INSERT INTO chores (name,assigned,time,type) VALUES ('20 minute reading','Virginia', 20, 'school');
 INSERT INTO chores (name,assigned,time,type) VALUES ('10 minute reading','Lucy', 10, 'school');
+
+INSERT INTO to_do (name,assigned,time,type) VALUES ('20 minute reading','Evelyn', 20, 'school');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('20 minute reading','Virginia', 20, 'school');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('10 minute reading','Lucy', 10, 'school');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Get Ready For Day','Virginia', 10, 'morning');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Get Ready For Day','Evelyn', 10, 'morning');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Get Ready For Day','Lucy', 10, 'morning');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Make it to Bus on Time','Virginia', 5, 'morning');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Make it to Bus on Time','Evelyn', 5, 'morning');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Make it to Bus on Time','Lucy', 5, 'morning');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Get Ready For Bed','Virginia', 5, 'evening');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Get Ready For Bed','Evelyn', 5, 'evening');
+INSERT INTO to_do (name,assigned,time,type) VALUES ('Get Ready For Bed','Lucy', 5, 'evening');
+
+INSERT INTO open_chores (name,time,type) VALUES ('Empty Dishwasher', 5, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Load Dishwasher', 5, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Fold Laundry', 10, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Put Away Laundry', 10, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Tidy Living Room', 5, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Tidy Bedroom', 5, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Clear Table', 3, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Sweep Floor', 10, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Vacuum Floor', 10, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Tidy Boot Bench', 5, 'house');
+INSERT INTO open_chores (name,time,type) VALUES ('Tidy Basement', 10, 'house');
+
+
 
