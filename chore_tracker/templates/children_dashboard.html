@@ -16,10 +16,10 @@
 <body>
     <h1>Select a Child to View Progress</h1>
     {% for child in children %}
-        <button class="child-button" onclick="location.href='{{ url_for('progress', child_id=child['id']) }}'">
+        <button class="child-button" onclick="location.href='{{ url_for('main.progress', child_id=child['id']) }}'">
             {{ child['name'] }}
         </button>
     {% endfor %}
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <a href="{{ url_for('main.logout') }}">Logout</a>
 </body>
 </html>

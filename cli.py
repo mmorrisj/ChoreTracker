@@ -1,7 +1,7 @@
 import click
 from flask import current_app
 from werkzeug.security import generate_password_hash
-from utils import get_db_connection, Config , ChoreData, ChoreActions, UserActions
+from chore_tracker.utils import get_db_connection, Config , ChoreData, ChoreActions, UserActions
 from datetime import date, datetime
 import shutil
 import os

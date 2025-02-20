@@ -8,7 +8,7 @@
     <div class="container">
         <h1>Select a Child</h1>
         {% for child in children %}
-            <button class="child-button" onclick="location.href='{{ url_for('chore.manage_chores', child_id=child['id']) }}'">
+            <button class="child-button" onclick="location.href='{{ url_for('main.manage_chores', child_id=child['id']) }}'">
                 {{ child['name'] }}
             </button>
         {% endfor %}
@@ -22,7 +22,7 @@
             <canvas id="completedChoresTimelineChart" width="400" height="200"></canvas>
         </div>
         
-        <a href="{{ url_for('ui.settings') }}" class="button-link">Settings</a>
+        <a href="{{ url_for('main.settings') }}" class="button-link">Settings</a>
         
         <h2>Earnings, Expenses, and Deductions Breakdown</h2>
         <div class="chart-container">

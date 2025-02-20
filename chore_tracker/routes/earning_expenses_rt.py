@@ -1,7 +1,7 @@
 from flask import jsonify
-from routes.ui import ui
-from utils import get_db_connection, ChoreData
-@ui.route('/api/earnings_expenses_deductions')
+from . import routes_bp
+from chore_tracker.utils import get_db_connection, ChoreData
+@routes_bp.route('/api/earnings_expenses_deductions')
 def get_earnings_expenses_deductions():
     conn = get_db_connection()
     chore_data = ChoreData(conn)

@@ -1,15 +1,15 @@
-from routes.chore import chore
+from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for
-from utils import get_db_connection,Config, ChoreData, ChoreActions, calculate_earnings
+from chore_tracker.utils import get_db_connection,Config, ChoreData, ChoreActions, calculate_earnings
 from datetime import date
 import sqlite3
 
 cfg = Config.from_yaml()
 
-@chore.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
+@routes_bp.route('/manage_chores/<int:child_id>', methods=['GET', 'POST'])
 def manage_chores(child_id):
     if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('main.login'))
     with sqlite3.connect(cfg.db, timeout=5.0) as conn:
         conn.row_factory = sqlite3.Row
         # Load Chore Data
@@ -87,10 +87,10 @@ def manage_chores(child_id):
                            bad_behavior=bad_behavior,
                            very_bad_behavior=very_bad_behavior)
     
-@chore.route('/remove_chore', methods=['POST'])
+@routes_bp.route('/remove_chore', methods=['POST'])
 def remove_chore():
     if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('main.login'))
 
     chore_id = request.form['chore_id']
     conn = get_db_connection()
@@ -106,12 +106,12 @@ def remove_chore():
     conn.commit()
     conn.close()
 
-    return redirect(url_for('ui.settings'))
+    return redirect(url_for('main.settings'))
 
-@chore.route('/add_preset_chore', methods=['GET', 'POST'])
+@routes_bp.route('/add_preset_chore', methods=['GET', 'POST'])
 def add_preset_chore():
     if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('/login'))
     
     if request.method == 'POST':
         chore_name = request.form['chore_name']
@@ -124,7 +124,7 @@ def add_preset_chore():
         conn.commit()
         conn.close()
 
-        return redirect(url_for('ui.settings'))
+        return redirect(url_for('main.settings'))
     
     return render_template('add_preset_chore.html')
 

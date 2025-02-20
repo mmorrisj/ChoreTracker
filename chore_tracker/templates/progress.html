@@ -13,6 +13,6 @@
             <li>{{ chore['name'] }} - ${{ '%.2f' % chore['amount_earned'] }} on {{ chore['completion_date'] }}</li>
         {% endfor %}
     </ul>
-    <a href="{{ url_for('children_dashboard') }}">Back to Dashboard</a>
+    <a href="{{ url_for('main.children_dashboard') }}">Back to Dashboard</a>
 </body>
 </html>

@@ -1,9 +1,9 @@
-from routes.chore import chore
+from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for
-from utils import get_db_connection, calculate_net_earnings
+from chore_tracker.utils import get_db_connection, calculate_net_earnings
 from datetime import date
 
-@chore.route('/manage_spending/<int:child_id>', methods=['GET', 'POST'])
+@routes_bp.route('/manage_spending/<int:child_id>', methods=['GET', 'POST'])
 def manage_spending(child_id):
     # if 'user_role' not in session or session['user_role'] != 'parent':
     #     return redirect(url_for('auth.login'))
@@ -67,7 +67,7 @@ def manage_spending(child_id):
         #     earnings.append({'name': child['name'], 'net_earnings': net_earnings})
         
         conn.close()
-        return redirect(url_for('ui.parent_dashboard'))
+        return redirect(url_for('/parent_dashboard'))
         # return render_template('parent_dashboard.html', children=children, earnings=earnings)
 
     conn.close()

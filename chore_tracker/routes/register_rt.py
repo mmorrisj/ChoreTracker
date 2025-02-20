@@ -1,9 +1,9 @@
 from flask import current_app as app
-from . import auth
+from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for
-from utils import get_db_connection,UserActions
+from chore_tracker.utils import get_db_connection,UserActions
 
-@auth.route('/register', methods=['GET', 'POST'])
+@routes_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
@@ -13,6 +13,6 @@ def register():
         users = UserActions(conn)
         users.add_user(username,password,role)
         conn.close()
-        return redirect(url_for('login'))
+        return redirect(url_for('/login'))
 
     return render_template('register.html')

@@ -1,11 +1,11 @@
-from routes.ui import ui
+from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for
-from utils import get_db_connection, calculate_net_earnings, ChoreData
+from chore_tracker.utils import get_db_connection, calculate_net_earnings, ChoreData
 
-@ui.route('/parent_dashboard')
+@routes_bp.route('/parent_dashboard')
 def parent_dashboard():
     if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('/login'))
     
     conn = get_db_connection()
     data = ChoreData(conn)

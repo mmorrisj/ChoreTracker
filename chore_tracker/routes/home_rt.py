@@ -1,8 +1,8 @@
-from routes.ui import ui
+from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for
-from utils import get_db_connection
+from chore_tracker.utils import get_db_connection
 
-@ui.route('/home')
+@routes_bp.route('/home')
 def home():
     conn = get_db_connection()
     children = conn.execute('SELECT id, name FROM users WHERE role = "child"').fetchall()

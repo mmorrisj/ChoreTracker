@@ -1,19 +1,18 @@
 from flask import Flask, render_template, request, redirect, session, url_for, jsonify
 import sqlite3
 from datetime import datetime
-
-from utils import (Config, get_db_connection, calculate_earnings, complete_chore)
+from chore_tracker.utils import (Config, get_db_connection, calculate_earnings, complete_chore, ChoreData)
 from cli import register_cli_commands
-from routes.auth import auth
-from routes.chore import chore
-from routes.ui import ui
+from chore_tracker.routes import routes_bp
+import os
 
-app = Flask(__name__)
+app = Flask(__name__,
+            template_folder=os.path.join("chore_tracker", "templates"))
+
 app.secret_key = 'your_secret_key'
 
-app.register_blueprint(auth)
-app.register_blueprint(chore)
-app.register_blueprint(ui)
+app.register_blueprint(routes_bp,url_prefix='/')
+
 # Register CLI commands with the app
 register_cli_commands(app)
 
@@ -28,23 +27,8 @@ def index():
             conn.close()
             return render_template('parent_dashboard.html', children=children, earnings=earnings)
         elif session['user_role'] == 'child':
-            return redirect(url_for('ui.children_dashboard'))
-    return redirect(url_for('auth.login'))
-
-@app.route('/complete_chore', methods=['POST'])
-def complete_chore_route():
-    if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('auth.login'))
-
-    child_id = request.form['child_id']
-    chore_id = request.form['chore_id']
-    completion_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    conn = get_db_connection()
-    complete_chore(conn, child_id, chore_id, completion_date)
-    conn.close()
-
-    return redirect(url_for('index'))
+            return redirect(url_for('/children_dashboard'))
+    return redirect(url_for('main.login'))
 
 if __name__ == '__main__':
     app.run(debug=True)

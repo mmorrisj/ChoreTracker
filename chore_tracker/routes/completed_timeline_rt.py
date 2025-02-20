@@ -1,9 +1,9 @@
-from routes.ui import ui
+from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for, jsonify
-from utils import get_db_connection
+from chore_tracker.utils import get_db_connection
 from datetime import datetime, timedelta
 
-@ui.route('/api/completed_chores_timeline', methods=['GET'])
+@routes_bp.route('/api/completed_chores_timeline', methods=['GET'])
 def get_completed_chores_timeline():
     today = datetime.now().date()  # Get today's date without time
     thirty_days_ago = today - timedelta(days=30)  # 30 days ago from today

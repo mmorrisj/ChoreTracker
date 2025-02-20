@@ -1,9 +1,9 @@
-from routes.auth import auth
+from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for
-from utils import get_db_connection, ChoreData
+from chore_tracker.utils import get_db_connection, ChoreData
 from werkzeug.security import generate_password_hash, check_password_hash
 
-@auth.route('/login', methods=['GET', 'POST'])
+@routes_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
@@ -20,7 +20,7 @@ def login():
             earnings = data.get_earnings_report()
             conn.close()
             return render_template('parent_dashboard.html', children=children, earnings=earnings)
-            # return redirect(url_for('ui.parent_dashboard'))
+            # return redirect(url_for('/parent_dashboard'))
         else:
             conn.close()
             return 'Invalid credentials'

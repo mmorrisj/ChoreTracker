@@ -103,10 +103,10 @@
 </head>
 <body>
     <!-- Return to Parent Dashboard button -->
-    <a href="{{ url_for('ui.parent_dashboard') }}" class="dashboard-link">Return to Parent Dashboard</a>
+    <a href="{{ url_for('main.parent_dashboard') }}" class="dashboard-link">Return to Parent Dashboard</a>
 
     <h1>Manage Chores for {{ child['name'] }}</h1>
-    <a href="{{ url_for('chore.manage_spending', child_id=child['id']) }}" class="spending-link">Manage Spending for {{ child['name'] }}</a>
+    <a href="{{ url_for('main.manage_spending', child_id=child['id']) }}" class="spending-link">Manage Spending for {{ child['name'] }}</a>
     <h2>Recent Actions for {{ child['name'] }}</h2>
 <div class="table-container">
     <table>

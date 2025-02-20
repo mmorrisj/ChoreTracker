@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>Manage Spending for {{ child['name'] }}</h1>
-    <form method="post" action="{{ url_for('chore.manage_spending', child_id=child['id']) }}">
+    <form method="post" action="{{ url_for('main.manage_spending', child_id=child['id']) }}">
         <h2>Quick Submit</h2>
         <div class="quick-submit">
             <button type="submit" name="quick_submit" value="25 Cent Spend">Spend $0.25</button>

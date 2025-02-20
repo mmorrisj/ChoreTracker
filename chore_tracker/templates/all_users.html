@@ -27,7 +27,7 @@
         </table>
 
         <h2>Remove User</h2>
-        <form action="{{ url_for('remove_user') }}" method="post">
+        <form action="{{ url_for('main.remove_user') }}" method="post">
             <input type="number" name="user_id" placeholder="User ID">
             <button type="submit">Remove User</button>
         </form>

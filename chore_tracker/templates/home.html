@@ -2,67 +2,11 @@
 <html>
 <head>
     <title>Home</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        h1, h2, h3 {
-            color: #333;
-        }
-        .container {
-            width: 90%;
-            max-width: 1000px;
-            background: white;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: space-between;
-        }
-        .child-section, .open-chores-section {
-            width: 45%;
-        }
-        .chore {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 10px 0;
-        }
-        .chore input[type="checkbox"] {
-            margin-right: 10px;
-        }
-        .chore button {
-            margin-left: 10px;
-        }
-        .green-check {
-            color: green;
-            font-size: 1.5em;
-        }
-        .header {
-            width: 100%;
-            background-color: #007bff;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-        }
-        .header a {
-            color: white;
-            text-decoration: none;
-            font-size: 18px;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <div class="header">
-        <a href="{{ url_for('parent_dashboard') }}">Parent Dashboard</a>
+        <a href="{{ url_for('main.parent_dashboard') }}">Parent Dashboard</a>
     </div>
 
     <div class="container">
