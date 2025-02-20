@@ -25,9 +25,9 @@ def index():
             children = data.fetch_children()
             earnings = data.get_earnings_report()
             conn.close()
-            return render_template('parent_dashboard.html', children=children, earnings=earnings)
+            return redirect(url_for('main.parent_dashboard'))
         elif session['user_role'] == 'child':
-            return redirect(url_for('/children_dashboard'))
+            return redirect(url_for('main.children_dashboard'))
     return redirect(url_for('main.login'))
 
 if __name__ == '__main__':

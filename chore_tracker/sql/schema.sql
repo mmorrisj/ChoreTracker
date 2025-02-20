@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT NOT NULL,
     role TEXT NOT NULL,
     password TEXT NOT NULL,
-    UNIQUE (name)
+    UNIQUE (name,role)
 );
 
 CREATE TABLE IF NOT EXISTS chores (
@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS chores (
     assigned TEXT NOT NULL,
     time REAL NOT NULL,
     type TEXT NOT NULL,
+    UNIQUE (name, assigned, time, type)
 );
 
 CREATE TABLE IF NOT EXISTS behaviors (
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS behaviors (
     name TEXT NOT NULL,
     amount REAL NOT NULL,
     type TEXT NOT NULL,
+    UNIQUE (name, amount, type)
 );
 
 CREATE TABLE IF NOT EXISTS completed_chores (
@@ -51,7 +53,6 @@ CREATE TABLE IF NOT EXISTS completed_expenses (
     FOREIGN KEY (expense_id) REFERENCES expenses(id)
 );
 
-
 CREATE TABLE IF NOT EXISTS to_do (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -60,39 +61,17 @@ CREATE TABLE IF NOT EXISTS to_do (
     type TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS completed_to_do (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    to_do_id INTEGER,
-    time REAL NOT NULL,
-    amount_earned REAL NOT NULL,
-    completion_date DATE NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (to_do_id) REFERENCES to_do(id)
-);
-
 CREATE TABLE IF NOT EXISTS open_chores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,,
+    name TEXT NOT NULL,
     time REAL NOT NULL,
     type TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS completed_open_chores (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    open_chore_id INTEGER,
-    time REAL NOT NULL,
-    amount_earned REAL NOT NULL,
-    completion_date DATE NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (open_chore_id) REFERENCES open_chores(id)
 );
 
 INSERT OR IGNORE INTO users (name, role, password) VALUES ('Virginia', 'child', 'virginia');
 INSERT OR IGNORE INTO users (name, role, password) VALUES ('Evelyn', 'child', 'evelyn');
 INSERT OR IGNORE INTO users (name, role, password) VALUES ('Lucy', 'child', 'lucy');
-INSERT OR IGNORE INTO users (name, role, password) VALUES ('Parent', 'parent', 'parent')
+INSERT OR IGNORE INTO users (name, role, password) VALUES ('Parent', 'parent', 'parent');
 
 INSERT OR IGNORE INTO behaviors (name, amount, type) VALUES ('Act of Kindness', .25, 'good');
 INSERT OR IGNORE INTO behaviors (name, amount, type) VALUES ('5 Minute Helpfulness', 1, 'good');

@@ -5,10 +5,10 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Manage Spending for {{ child['name'] }}</h1>
+    <h1 class="manage-spending-title">Manage Spending for {{ child['name'] }}</h1>
     <form method="post" action="{{ url_for('main.manage_spending', child_id=child['id']) }}">
         <h2>Quick Submit</h2>
-        <div class="quick-submit">
+        <div class="container">
             <button type="submit" name="quick_submit" value="25 Cent Spend">Spend $0.25</button>
             <button type="submit" name="quick_submit" value="1 Dollar Spend">Spend $1.00</button>
             <button type="submit" name="quick_submit" value="5 Dollar Spend">Spend $5.00</button>

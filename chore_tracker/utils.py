@@ -8,7 +8,8 @@ import re
 import ast
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date
+from datetime import datetime, timedelta, date
+from flask import jsonify
 
 class Config:
     def __init__(self, **entries):
@@ -65,8 +66,12 @@ def calculate_net_earnings(child_id):
 class ChoreData:
     def __init__(self,conn):
         self.conn = conn
-        self.children = None
-
+        self.children = self.fetch_children()
+        self.chores = self.fetch_chores()
+        self.get_earnings_report()
+        self.get_expenses_report()
+        self.get_behavior_deductions_report()
+        self.timeline = self.completed_chores_timeline()
     def fetch_user(self,username):
         return self.conn.execute('SELECT * FROM users WHERE name = ? AND role IN ("parent", "child")', (username,)).fetchone()
     
@@ -82,10 +87,13 @@ class ChoreData:
             return self.child
     def fetch_chores(self):
         # Fetch chore lists by time of day
-        self.morning_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
-        self.afternoon_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
-        self.evening_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
+        self.morning_chores = self.conn.execute('SELECT id, name, assigned, time FROM chores WHERE type = "Morning"').fetchall()
+        self.afternoon_chores = self.conn.execute('SELECT id, name, assigned, time FROM chores WHERE type = "Afternoon"').fetchall()
+        self.evening_chores = self.conn.execute('SELECT id, name, assigned, time FROM chores WHERE type = "Evening"').fetchall()
 
+    def fetch_all_chores(self):
+        self.all_chores = self.conn.execute('SELECT * FROM chores').fetchall()
+        return self.all_chores
     def fetch_recent_chores(self,child_id):
         self.recent_chores = self.conn.execute(
             '''
@@ -139,10 +147,51 @@ class ChoreData:
                         for child in self.children]
         return self.earnings
     
-    def close_connection(self):
-        """Closes the database connection."""
-        self.conn.close()
+    def get_expenses_report(self):
+        if self.children is None:
+            self.fetch_children()
+        self.expenses = [{'name': child['name'], 'expenses': self.child_expenses(child['id'])}
+                        for child in self.children]
+        return self.expenses
+    def get_behavior_deductions_report(self):
+        if self.children is None:
+            self.fetch_children() 
+        self.behavior_deductions = [{'name': child['name'], 'behavior_deductions': self.child_behavior_deductions(child['id'])}
+                        for child in self.children]
+        return self.behavior_deductions  
 
+    def completed_chores_timeline(self):
+        today = datetime.now().date()  # Get today's date without time
+        thirty_days_ago = today - timedelta(days=30)  # 30 days ago from today
+        # Query to get chore counts per day for each child in the past 30 days
+        completed_chores = self.conn.execute('''
+            SELECT u.name as child_name, c.completion_date, COUNT(*) as count
+            FROM completed_chores c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.completion_date BETWEEN ? AND ?
+            GROUP BY u.name, c.completion_date
+            ORDER BY u.name, c.completion_date
+        ''', (thirty_days_ago, today)).fetchall()  # Note the order: (start_date, end_date)
+        
+        # Process the results into a dictionary format
+        chore_data = {}
+        for row in completed_chores:
+            child_name = row['child_name']
+            date = row['completion_date']
+            count = row['count']
+            
+            if child_name not in chore_data:
+                chore_data[child_name] = []
+            
+            chore_data[child_name].append({'date': date, 'count': count})
+        
+        # Fill missing dates with 0 counts for each child
+        dates = [(thirty_days_ago + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(31)]  # Adjust range to include today
+        for child in chore_data:
+            date_counts = {entry['date']: entry['count'] for entry in chore_data[child]}
+            chore_data[child] = [{'date': date, 'count': date_counts.get(date, 0)} for date in dates]
+        
+        return json.dumps(chore_data)
 class ChoreActions:
     def __init__(self,conn):
         self.conn = conn
@@ -162,13 +211,13 @@ class ChoreActions:
     
     def fetch_chores(self):
         # Fetch chore lists by time of day
-        self.morning_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Morning"').fetchall()
-        self.afternoon_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Afternoon"').fetchall()
-        self.evening_chores = self.conn.execute('SELECT id, name, preset_amount FROM chores WHERE time_of_day = "Evening"').fetchall()
+        self.morning_chores = self.conn.execute('SELECT id, name, assigned, time FROM chores WHERE type = "Morning"').fetchall()
+        self.afternoon_chores = self.conn.execute('SELECT id, name, assigned, time FROM chores WHERE type = "Afternoon"').fetchall()
+        self.evening_chores = self.conn.execute('SELECT id, name, assigned, time FROM chores WHERE type = "Evening"').fetchall()
         self.all_chores = self.conn.execute('SELECT * FROM chores').fetchall()
     
     def fetch_choreid(self,chore_name,chore_type,chore_timeofday):
-        return self.conn.execute('SELECT id FROM chores WHERE name = ? AND type = ? AND time_of_day = ?', (chore_name,chore_type,chore_timeofday)).fetchone()['id']
+        return self.conn.execute('SELECT id FROM chores WHERE name = ? AND type = ?', (chore_name,chore_type)).fetchone()['id']
     
     def complete_chore(self,chore_id,child_id,completion_date):
          minutes = self.fetch_minutes(chore_id)
@@ -234,6 +283,9 @@ class UserActions:
         user =  self.fetch_user(username,user_id)
         return user['name']
 
+    def fetch_user_names(self,role='child'):
+        users = self.conn.execute('SELECT name FROM users WHERE role IN ("child")').fetchall()
+        return users
 def complete_chore(conn, child_id, chore_id, completion_date):
     # Fetch the chore's preset amount of time
     minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']

@@ -15,6 +15,5 @@ def complete_chore_route():
 
     conn = get_db_connection()
     complete_chore(conn, child_id, chore_id, completion_date)
-    conn.close()
-
+    conn.commit()
     return redirect(url_for('/index'))
