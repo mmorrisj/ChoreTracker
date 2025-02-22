@@ -45,15 +45,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     const datasets = childrenNames.map(child => ({
         label: child,
         data: choreTimelineData[child].map(entry => entry.count),
-        borderColor: getRandomColor(),
-        fill: false
+        backgroundColor: getRandomColor()
     }));
 
     const labels = choreTimelineData[childrenNames[0]].map(entry => entry.date);
 
     const timelineChartCtx = document.getElementById('completedChoresTimelineChart').getContext('2d');
     new Chart(timelineChartCtx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: datasets
@@ -61,16 +60,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         options: {
             scales: {
                 x: { title: { display: true, text: 'Date' } },
-                y: { title: { display: true, text: 'Chores Completed' } }
+                y: { title: { display: true, text: 'Chores Completed' }, beginAtZero: true }
             },
             plugins: {
-                legend: { display: true }
+                legend: { display: true },
+                title: { display: true, text: 'Chore Timeline' }
             }
         }
     });
-
-    // Helper function to generate random colors
-    function getRandomColor() {
+});    function getRandomColor() {
         const letters = '0123456789ABCDEF';
         let color = '#';
         for (let i = 0; i < 6; i++) {

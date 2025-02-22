@@ -1,6 +1,7 @@
 from . import routes_bp
 from flask import Flask, render_template, request, redirect, session, url_for
-from chore_tracker.utils import get_db_connection
+from chore_tracker.utils import get_db_connection, ChoreActions, ChoreData
+from datetime import date
 
 @routes_bp.route('/home')
 def home():
@@ -11,6 +12,7 @@ def home():
     combined_total = 0
     earnings_over_time = {}
     last_chores = {}
+    child_tasks = {}
 
     for child in children:
         child_id = child['id']
@@ -50,7 +52,32 @@ def home():
             (child_id,)
         ).fetchall()
 
+        tasks = conn.execute('SELECT id, name FROM chores WHERE type = "Daily" AND assigned = ?', (child_name,)).fetchall()
+        child_tasks[child_id] = tasks
+
     conn.close()
-    return render_template('home.html', children=children, earnings=earnings, combined_total=combined_total, earnings_over_time=earnings_over_time, last_chores=last_chores)
+    return render_template('home.html', children=children, earnings=earnings, combined_total=combined_total, earnings_over_time=earnings_over_time, last_chores=last_chores, child_tasks=child_tasks)
 
-
+@routes_bp.route('/complete_tasks/<int:child_id>', methods=['POST'])
+def complete_tasks(child_id):
+    if 'user_role' not in session or session['user_role'] != 'parent':
+        return redirect(url_for('main.login'))
+    
+    task_ids = request.form.getlist('tasks')
+    action = request.form.get('action')
+    completion_date = date.today().isoformat()
+    
+    conn = get_db_connection()
+    chore_action = ChoreActions(conn)
+    
+    if action:
+        action_id = chore_action.fetch_choreid(action, 'preset', 'Any')
+        chore_action.complete_chore(action_id, child_id, completion_date)
+    else:
+        for task_id in task_ids:
+            chore_action.complete_chore(task_id, child_id, completion_date)
+    
+    conn.commit()
+    conn.close()
+    
+    return redirect(url_for('main.home'))

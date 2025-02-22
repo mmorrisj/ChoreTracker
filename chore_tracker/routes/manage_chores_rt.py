@@ -111,18 +111,19 @@ def remove_chore():
 @routes_bp.route('/add_preset_chore', methods=['GET', 'POST'])
 def add_preset_chore():
     if 'user_role' not in session or session['user_role'] != 'parent':
-        return redirect(url_for('/login'))
+        return redirect(url_for('main.login'))
     
     if request.method == 'POST':
-        chore_name = request.form['chore_name']
-        preset_minutes = float(request.form['preset_minutes'])
-        time_of_day = request.form['time_of_day']
+        chore_name = request.form['name']
+        chore_time = float(request.form['time'])
+        assigned = request.form['assigned']
+        chore_type = request.form['type']
+        
 
         conn = get_db_connection()
-        conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "preset", ?)', 
-                     (chore_name, preset_minutes, time_of_day))
+        conn.execute('INSERT INTO chores (name, assigned, time, type) VALUES (?, ?, ?, ?)', 
+                     (chore_name, assigned, chore_time, chore_type))
         conn.commit()
-        conn.close()
 
         return redirect(url_for('main.settings'))
     

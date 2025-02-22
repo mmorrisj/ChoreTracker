@@ -31,6 +31,25 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def execute_sql_file(conn, sql_file_path):
+    """
+    Executes an SQL file against the SQLite database.
+    Args:
+        db_path (str): Path to the SQLite database file.
+        sql_file_path (str): Path to the SQL file containing DROP TABLE statements.
+    """
+    try:
+        # Read SQL file
+        with open(sql_file_path, 'r') as sql_file:
+            sql_script = sql_file.read()
+        # Execute SQL script
+        conn.executescript(sql_script)
+        # Commit and close connection
+        conn.commit()
+        print("SQL script executed successfully.")
+    except Exception as e:
+        print(f"Error executing SQL file: {e}")
+
 def calculate_earnings(minutes):
     if minutes < 0:
         return min(float((minutes/60)* cfg.hourly_rate), float(cfg.minimum_deduct))
@@ -46,7 +65,7 @@ def calculate_net_earnings(child_id):
         ).fetchone()[0]
 
         # Sum negative deductions from completed chores (behavior actions)
-        behavior_deductions = self.conn.execute(
+        behavior_deductions = conn.execute(
             'SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned < 0',
             (child_id,)
         ).fetchone()[0]
@@ -63,6 +82,38 @@ def calculate_net_earnings(child_id):
         print(f"Child ID: {child_id}, Earned: {total_earned}, Behavior Deductions: {behavior_deductions}, Expenses: {total_expenses}, Net: {net_earnings}")
         return net_earnings
 
+def sync_config_to_db():
+    conn = get_db_connection()
+    children = conn.execute('SELECT name FROM users WHERE role = "child"').fetchall()
+
+    # Upsert chores for each child
+    for chore_type, chores_dict in cfg.chores.items():
+        for chore_name, time_value in chores_dict.items():
+            for child in children:
+                conn.execute('''
+                    INSERT INTO chores (name, assigned, time, type)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(name, assigned, time, type)
+                    DO UPDATE SET time=excluded.time
+                ''', (chore_name, child['name'], time_value, chore_type.capitalize()))
+        for behavior, amount in cfg.behaviors['bad_behaviors'].items():
+            conn.execute('''
+                INSERT INTO preset_behaviors (behavior, amount, type)
+                VALUES (?, ?, 'bad')
+                ON CONFLICT(behavior, amount, type)
+                DO UPDATE SET amount=excluded.amount
+            ''', (behavior, amount))
+    if 'good_bahviors' in cfg.behaviors:
+        for behavior, amount in cfg.behaviors['good_bahviors'].items():
+            conn.execute('''
+                INSERT INTO preset_behaviors (behavior, amount, type)
+                VALUES (?, ?, 'good')
+                ON CONFLICT(behavior, amount, type)
+                DO UPDATE SET amount=excluded.amount
+            ''', (behavior, amount))
+    conn.commit()
+
+
 class ChoreData:
     def __init__(self,conn):
         self.conn = conn
@@ -71,6 +122,7 @@ class ChoreData:
         self.get_earnings_report()
         self.get_expenses_report()
         self.get_behavior_deductions_report()
+        self.get_behavior_increases_report()
         self.timeline = self.completed_chores_timeline()
     def fetch_user(self,username):
         return self.conn.execute('SELECT * FROM users WHERE name = ? AND role IN ("parent", "child")', (username,)).fetchone()
@@ -85,6 +137,12 @@ class ChoreData:
             return 'Child not found', 404
         else:
             return self.child
+    def fetch_child_name(self,child_id):
+        self.child = self.conn.execute('SELECT name FROM users WHERE id = ?', (child_id,)).fetchone()
+        if not self.child:
+            return 'Child not found', 404
+        else:
+            return self.child['name']
     def fetch_chores(self):
         # Fetch chore lists by time of day
         self.morning_chores = self.conn.execute('SELECT id, name, assigned, time FROM chores WHERE type = "Morning"').fetchall()
@@ -94,6 +152,15 @@ class ChoreData:
     def fetch_all_chores(self):
         self.all_chores = self.conn.execute('SELECT * FROM chores').fetchall()
         return self.all_chores
+    
+    def fetch_all_behaviors(self):
+        self.all_behaviors = self.conn.execute('SELECT * FROM preset_behaviors').fetchall()
+        return self.all_behaviors
+    
+    def fetch_all_expenses(self):
+        self.all_expenses = self.conn.execute('SELECT * FROM expenses').fetchall()
+        return self.all_expenses
+    
     def fetch_recent_chores(self,child_id):
         self.recent_chores = self.conn.execute(
             '''
@@ -125,19 +192,26 @@ class ChoreData:
 
     def child_behavior_deductions(self,child_id):
         return self.conn.execute(
-            'SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned < 0',(child_id,)).fetchone()[0]
-    
+            'SELECT COALESCE(SUM(amount), 0) FROM behaviors WHERE user_id = ? AND amount < 0',(child_id,)).fetchone()[0]
+    def child_behavior_increases(self,child_id):
+        return self.conn.execute(
+            'SELECT COALESCE(SUM(amount), 0) FROM behaviors WHERE user_id = ? AND amount > 0',(child_id,)).fetchone()[0]
     def child_expenses(self,child_id):
-        return self.conn.execute('SELECT COALESCE(SUM(amount_deducted), 0) FROM completed_expenses WHERE user_id = ?', (child_id,)).fetchone()[0]
+        return self.conn.execute('SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?', (child_id,)).fetchone()[0]
     
     def child_earnings(self,child_id):
         return self.conn.execute('SELECT COALESCE(SUM(amount_earned), 0) FROM completed_chores WHERE user_id = ? AND amount_earned > 0', (child_id,)).fetchone()[0]
 
     def calculate_net_earnings(self,child_id):
         # Calculate net earnings
-        self.net_earnings = self.child_earnings(child_id) + (self.child_behavior_deductions(child_id) or 0) - abs(self.child_expenses(child_id) or 0)
+        self.net_earnings = self.child_earnings(child_id) + (self.child_behavior_increases(child_id) or 0) + (self.child_behavior_deductions(child_id) or 0) - abs(self.child_expenses(child_id) or 0)
         # Optional: print debug information for tracing
-        print(f"Child ID: {child_id}, Earned: {self.child_earnings(child_id)}, Behavior Deductions: {self.child_behavior_deductions(child_id)}, Expenses: {self.child_expenses(child_id)}, Net: {self.net_earnings}")
+        print(f"""Child ID: {child_id}, 
+              Earned: {self.child_earnings(child_id)}, 
+              Behavior Deductions: {self.child_behavior_deductions(child_id)}, 
+              Behavior Increases: {self.child_behavior_increases(child_id)},
+              Expenses: {self.child_expenses(child_id)}, 
+              Net: {self.net_earnings}""")
         return self.net_earnings
     
     def get_earnings_report(self):
@@ -159,7 +233,12 @@ class ChoreData:
         self.behavior_deductions = [{'name': child['name'], 'behavior_deductions': self.child_behavior_deductions(child['id'])}
                         for child in self.children]
         return self.behavior_deductions  
-
+    def get_behavior_increases_report(self):
+        if self.children is None:
+            self.fetch_children() 
+        self.behavior_increases = [{'name': child['name'], 'behavior_increases': self.child_behavior_increases(child['id'])}
+                        for child in self.children]
+        return self.behavior_increases
     def completed_chores_timeline(self):
         today = datetime.now().date()  # Get today's date without time
         thirty_days_ago = today - timedelta(days=30)  # 30 days ago from today
@@ -196,7 +275,7 @@ class ChoreActions:
     def __init__(self,conn):
         self.conn = conn
         self.children = ChoreData(self.conn).fetch_children()
-
+        self.data = ChoreData(self.conn)
     def calculate_earnings(self,minutes):
         hourly_rate = cfg.hourly_rate
         minimum_rate = cfg.minimum_rate
@@ -228,13 +307,14 @@ class ChoreActions:
          print(f"{child_id},{chore_id},{amount_earned},{completion_date}")
          
     def behavior_deduction(self,child_id,deduction,completion_date):
+        child_name = self.fetch
         chore_id = self.fetch_choreid(deduction,'preset','Any')
         self.conn.execute('INSERT INTO completed_chores (user_id, chore_id, amount_earned, completion_date) VALUES (?, ?, ?, ?)',
                              (child_id, chore_id, cfg.behavior[deduction], completion_date))
          
-    def add_chore(self, chore_name,chore_time,chore_timeofday):
-        self.conn.execute('INSERT INTO chores (name, preset_amount, type, time_of_day) VALUES (?, ?, "custom", ?)', 
-                          (chore_name, chore_time, chore_timeofday))
+    def add_chore(self, chore_name,assigned_name,chore_time,chore_type):
+        self.conn.execute('INSERT OR IGNORE INTO chores (name, assigned, time, type) VALUES (?, ?, ?, ?)', 
+                          (chore_name, assigned_name,chore_time,chore_type))
         
     def calculate_minutes_for_earnings(self,earnings):
         return round((earnings * 60) / cfg.hourly_rate)
@@ -243,17 +323,34 @@ class ChoreActions:
 class UserActions:
     def __init__(self,conn):
         self.conn =  conn
-    def add_user(self,username, password, role):
-        hashed_password = generate_password_hash(password, method='sha256')
-        self.conn.execute('INSERT INTO users (name, role, password) VALUES (?, ?, ?)', (username, role, hashed_password))
-        self.conn.commit()
+
+        self.conn.execute('''CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            name TEXT UNIQUE NOT NULL, 
+            role TEXT NOT NULL, 
+            password TEXT NOT NULL
+        )''')
+
+    def add_user(self, username, role, password):
+        """Adds a new user with hashed password. Returns success or failure message."""
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        
+        try:
+            with self.conn:
+                self.conn.execute(
+                    'INSERT INTO users (name, role, password) VALUES (?, ?, ?)', 
+                    (username, role, hashed_password)
+                )
+            return f"User '{username}' added successfully."
+        except sqlite3.IntegrityError:  
+            return f"Error: Username '{username}' already exists."
 
     def remove_user(self,user_id=None,username=None):
         if user_id:
             # Check if the user exists
             user = self.conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
             if not user:
-                conn.close()
+                self.conn.close()
                 return 'User not found', 404
             self.conn.execute('DELETE FROM completed_chores WHERE user_id = ?', (user['id'],))
             self.conn.execute('DELETE FROM completed_expenses WHERE user_id = ?', (user['id'],))
@@ -262,7 +359,6 @@ class UserActions:
         if username:
             user = self.conn.execute('SELECT * FROM users WHERE name = ?', (username,)).fetchone()
             if not user:
-                conn.close()
                 return 'User not found', 404
             self.conn.execute('DELETE FROM completed_chores WHERE user_id = ?', (user['id'],))
             self.conn.execute('DELETE FROM completed_expenses WHERE user_id = ?', (user['id'],))
@@ -283,9 +379,18 @@ class UserActions:
         user =  self.fetch_user(username,user_id)
         return user['name']
 
-    def fetch_user_names(self,role='child'):
-        users = self.conn.execute('SELECT name FROM users WHERE role IN ("child")').fetchall()
-        return users
+    def fetch_user_names(self, role='child'):
+        query = 'SELECT name FROM users WHERE role = ?'
+        params = (role,)
+        
+        if role == 'parent':    
+            query = 'SELECT name FROM users WHERE role IN ("parent", "child")'
+            params = ()
+        
+        users = self.conn.execute(query, params).fetchall()
+        
+        return [user[0] for user in users]  # Extracting name from tuple
+    
 def complete_chore(conn, child_id, chore_id, completion_date):
     # Fetch the chore's preset amount of time
     minutes = conn.execute('SELECT preset_amount FROM chores WHERE id = ?', (chore_id,)).fetchone()['preset_amount']
@@ -303,6 +408,5 @@ def complete_chore(conn, child_id, chore_id, completion_date):
     # Optional: print debug information for tracing
     print(f"Chore {chore_id} completed by {child_id} on {completion_date}. Earnings: {earnings}")
 
-            
 
-            
+

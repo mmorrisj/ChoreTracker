@@ -5,9 +5,58 @@ children:
 chores:
 db: "chore_chart.db"  
 schema: "schema.sql"
-behavior:
-  'Bad Behavior': -.25
-  'Very Bad Behavior': -1
+behaviors:
+  good_bahviors: 
+    'Act of Kindness': .25
+    'Good Behavior': .25
+    'Good Attitude': .25
+    'Good Listening': .25
+    'Very Good Behavior': 1
+    'Helpful': .25
+    'Very Helpful': 1
+    'Kind Words': .25
+    'Peacemaker': .50
+    'Respectful': .25
+    'Team Player': .25
+    'Polite': .25
+    'Good Manners': .25
+  bad_behaviors:
+    'Bad Attitude': -.25
+    'Bad Behavior': -.25
+    'Bad Listening': -.25
+    'Bad Words': -.25
+    'Disrespectful': -.50
+    'Disobedient': -.25
+    'Fighting': -.50
+    'Hitting': -1
+    'Lying': -.25
+    'Rude': -.25
+    'Mean Words': -.25
+    'Not a Team Player': -.25
+    'Not Helpful': -.25
+    'Not Kind': -.25
+    'Very Bad Behavior': -1
+chores:
+  daily:
+    '20 minutes of reading': 20
+    'Clean up after yourself': 1
+    'Tidy room': 5
+    'Get Ready For Day': 10
+    'Get Ready For Bed': 10
+  tasks:
+    'Clear Dishwasher': 5
+    'Set Table': 2
+    'Empty Trash': 1
+    'Clear Table': 2
+    'Tidy Living Room': 5
+    'Tidy Boot Bench': 5
+    'Laundry': 15
+    'Wipe Counters': 5
+    'Vacuum': 5
+    'Walk Dog': 5
+    'Walk Dog Evening': 10
+    'Feed Dog': 1
+
 hourly_rate: 12
 minimum_rate: .25
 minimum_deduct: -.25

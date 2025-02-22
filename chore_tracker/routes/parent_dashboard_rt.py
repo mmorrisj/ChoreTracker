@@ -1,5 +1,5 @@
 from . import routes_bp
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import render_template, session, redirect, url_for
 from chore_tracker.utils import get_db_connection, ChoreData
 
 @routes_bp.route('/parent_dashboard')
@@ -13,6 +13,7 @@ def parent_dashboard():
     earnings = chore_data.earnings
     expenses = chore_data.expenses
     behavior_deductions = chore_data.behavior_deductions
+    behavor_increases = chore_data.behavior_increases
     chore_timeline = chore_data.timeline
 
     return render_template('parent_dashboard.html', 
@@ -20,4 +21,5 @@ def parent_dashboard():
                            earnings=earnings, 
                            expenses=expenses, 
                            deductions=behavior_deductions, 
+                           increases = behavor_increases,
                            chore_timeline=chore_timeline)

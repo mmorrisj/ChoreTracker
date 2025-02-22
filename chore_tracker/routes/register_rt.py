@@ -13,6 +13,6 @@ def register():
         users = UserActions(conn)
         users.add_user(username,password,role)
         conn.close()
-        return redirect(url_for('/login'))
+        return redirect(url_for('main.login'))
 
     return render_template('register.html')
