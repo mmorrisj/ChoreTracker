@@ -1,0 +1,26 @@
+FROM python:3.11-slim
+
+# Work directory
+WORKDIR /app
+
+# Copy and install dependencies
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copy backend files
+COPY config.yaml
+COPY app.py .
+COPY cli.py
+COPY sql/schem.sql
+
+
+# Set environment variables
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_RUN_PORT=5000
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 5000
+
+CMD ["sh", "-c", "flask init-db && flask init-users && flask init-chores && flask run"]

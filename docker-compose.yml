@@ -1,0 +1,75 @@
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: DockerFile
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: ${PG_URL}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    networks:
+      - backend
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: DockerFile
+    environment:
+      REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL}
+      REACT_APP_API_URL: ${REACT_APP_API_URL}
+      REACT_APP_API_KEY: ${REACT_APP_API_KEY}
+      REACT_APP_API_SECRET: ${REACT_APP_API_SECRET}
+
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "mmorrisj@gmail.com"
+      PGADMIN_DEFAULT_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - backend
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+volumes:
+  pgdata:
+  pgadmin-data:
+
+networks:
+  backend:
+    driver: bridge
