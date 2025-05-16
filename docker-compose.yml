@@ -12,26 +12,26 @@ services:
       - ./backend:/app
     depends_on:
       - db
-    networks:
-      - backend
+#     networks:
+#       - backend
 
-  frontend:
-    build: 
-      context: ./frontend
-      dockerfile: DockerFile
-    environment:
-      REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL}
-      REACT_APP_API_URL: ${REACT_APP_API_URL}
-      REACT_APP_API_KEY: ${REACT_APP_API_KEY}
-      REACT_APP_API_SECRET: ${REACT_APP_API_SECRET}
+#   frontend:
+#     build: 
+#       context: ./frontend
+#       dockerfile: DockerFile
+#     environment:
+#       REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL}
+#       REACT_APP_API_URL: ${REACT_APP_API_URL}
+#       REACT_APP_API_KEY: ${REACT_APP_API_KEY}
+#       REACT_APP_API_SECRET: ${REACT_APP_API_SECRET}
 
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+#     ports:
+#       - "3000:3000"
+#     depends_on:
+#       - backend
+#     volumes:
+#       - ./frontend:/app
+#       - /app/node_modules
 
   db:
     image: postgres:16
@@ -47,8 +47,8 @@ services:
       timeout: 5s
       retries: 5
     restart: always
-    networks:
-      - backend
+    # networks:
+    #   - backend
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -61,8 +61,8 @@ services:
       - "8080:80"
     depends_on:
       - db
-    networks:
-      - backend
+    # networks:
+    #   - backend
     volumes:
       - pgadmin-data:/var/lib/pgadmin
 
@@ -70,6 +70,6 @@ volumes:
   pgdata:
   pgadmin-data:
 
-networks:
-  backend:
-    driver: bridge
+# networks:
+#   backend:
+#     driver: bridge

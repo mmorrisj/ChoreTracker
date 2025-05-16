@@ -1,18 +1,7 @@
 FROM python:3.11-slim
 
 # Work directory
-WORKDIR /app
-
-# Copy and install dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
-
-# Copy backend files
-COPY config.yaml
-COPY app.py .
-COPY cli.py
-COPY sql/schem.sql
+WORKDIR chore_tracker/app
 
 
 # Set environment variables
