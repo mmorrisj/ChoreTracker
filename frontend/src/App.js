@@ -1,96 +1,198 @@
-import './App.css';
-import { useEffect, useRef } from 'react';
-import Chart from 'chart.js/auto';
+/**
+=========================================================
+* Material Dashboard 2 React - v2.2.0
+=========================================================
 
-function App() {
-  const myChartRef = useRef(null);
-  const timelineChartRef = useRef(null);
-  const earningsExpensesChartRef = useRef(null);
+* Product Page: https://www.creative-tim.com/product/material-dashboard-react
+* Copyright 2023 Creative Tim (https://www.creative-tim.com)
 
-  const children = [
-    { id: 1, name: 'Virginia' },
-    { id: 2, name: 'Evelyn' },
-    { id: 3, name: 'Lucy' }
-  ];
+Coded by www.creative-tim.com
 
-  useEffect(() => {
-    const ctx1 = myChartRef.current.getContext('2d');
-    const ctx2 = timelineChartRef.current.getContext('2d');
-    const ctx3 = earningsExpensesChartRef.current.getContext('2d');
+ =========================================================
 
-    // Destroy previous charts if they exist
-    Chart.getChart(ctx1)?.destroy();
-    Chart.getChart(ctx2)?.destroy();
-    Chart.getChart(ctx3)?.destroy();
+* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+*/
 
-    new Chart(ctx1, {
-      type: 'bar',
-      data: {
-        labels: children.map(c => c.name),
-        datasets: [{
-          label: 'Net Earnings',
-          data: [20, 35, 15], // Replace with dynamic values
-          backgroundColor: ['#4caf50', '#2196f3', '#ff9800']
-        }]
-      }
+import { useState, useEffect, useMemo } from "react";
+
+// react-router components
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+
+// @mui material components
+import { ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import Icon from "@mui/material/Icon";
+
+// Material Dashboard 2 React components
+import MDBox from "components/MDBox";
+
+// Material Dashboard 2 React example components
+import Sidenav from "examples/Sidenav";
+import Configurator from "examples/Configurator";
+
+// Material Dashboard 2 React themes
+import theme from "assets/theme";
+import themeRTL from "assets/theme/theme-rtl";
+
+// Material Dashboard 2 React Dark Mode themes
+import themeDark from "assets/theme-dark";
+import themeDarkRTL from "assets/theme-dark/theme-rtl";
+
+// RTL plugins
+import rtlPlugin from "stylis-plugin-rtl";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
+
+// Material Dashboard 2 React routes
+import routes from "routes";
+
+// Material Dashboard 2 React contexts
+import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "context";
+
+// Images
+import brandWhite from "assets/images/logo-ct.png";
+import brandDark from "assets/images/logo-ct-dark.png";
+
+export default function App() {
+  const [controller, dispatch] = useMaterialUIController();
+  const {
+    miniSidenav,
+    direction,
+    layout,
+    openConfigurator,
+    sidenavColor,
+    transparentSidenav,
+    whiteSidenav,
+    darkMode,
+  } = controller;
+  const [onMouseEnter, setOnMouseEnter] = useState(false);
+  const [rtlCache, setRtlCache] = useState(null);
+  const { pathname } = useLocation();
+
+  // Cache for the rtl
+  useMemo(() => {
+    const cacheRtl = createCache({
+      key: "rtl",
+      stylisPlugins: [rtlPlugin],
     });
 
-    new Chart(ctx2, {
-      type: 'line',
-      data: {
-        labels: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`),
-        datasets: children.map((c, idx) => ({
-          label: c.name,
-          data: Array.from({ length: 30 }, () => Math.floor(Math.random() * 3)),
-          borderColor: ['#4caf50', '#2196f3', '#ff9800'][idx],
-          fill: false
-        }))
-      }
-    });
-
-    new Chart(ctx3, {
-      type: 'doughnut',
-      data: {
-        labels: ['Earnings', 'Expenses', 'Deductions'],
-        datasets: [{
-          data: [50, 20, 10], // Example data
-          backgroundColor: ['#4caf50', '#f44336', '#ff9800']
-        }]
-      }
-    });
+    setRtlCache(cacheRtl);
   }, []);
 
-  return (
-    <div className="container">
-      <h1>Select a Child</h1>
-      {children.map(child => (
-        <button
-          key={child.id}
-          className="child-button"
-          onClick={() => window.location.href = `/manage-chores/${child.id}`}
-        >
-          {child.name}
-        </button>
-      ))}
+  // Open sidenav when mouse enter on mini sidenav
+  const handleOnMouseEnter = () => {
+    if (miniSidenav && !onMouseEnter) {
+      setMiniSidenav(dispatch, false);
+      setOnMouseEnter(true);
+    }
+  };
 
-      <h2>Children's Net Earnings</h2>
-      <div className="chart-container">
-        <canvas ref={myChartRef} width="400" height="100"></canvas>
-      </div>
+  // Close sidenav when mouse leave mini sidenav
+  const handleOnMouseLeave = () => {
+    if (onMouseEnter) {
+      setMiniSidenav(dispatch, true);
+      setOnMouseEnter(false);
+    }
+  };
 
-      <h2>Chore Completion in Last 30 Days</h2>
-      <div className="chart-container">
-        <canvas ref={timelineChartRef} width="400" height="200"></canvas>
-      </div>
+  // Change the openConfigurator state
+  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
 
-      <a href="/settings" className="button-link">Settings</a>
+  // Setting the dir attribute for the body element
+  useEffect(() => {
+    document.body.setAttribute("dir", direction);
+  }, [direction]);
 
-      <h2>Earnings, Expenses, and Deductions Breakdown</h2>
-      <div className="chart-container">
-        <canvas ref={earningsExpensesChartRef} width="400" height="200"></canvas>
-      </div>
-    </div>
+  // Setting page scroll to 0 when changing the route
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.scrollingElement.scrollTop = 0;
+  }, [pathname]);
+
+  const getRoutes = (allRoutes) =>
+    allRoutes.map((route) => {
+      if (route.collapse) {
+        return getRoutes(route.collapse);
+      }
+
+      if (route.route) {
+        return <Route exact path={route.route} element={route.component} key={route.key} />;
+      }
+
+      return null;
+    });
+
+  const configsButton = (
+    <MDBox
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      width="3.25rem"
+      height="3.25rem"
+      bgColor="white"
+      shadow="sm"
+      borderRadius="50%"
+      position="fixed"
+      right="2rem"
+      bottom="2rem"
+      zIndex={99}
+      color="dark"
+      sx={{ cursor: "pointer" }}
+      onClick={handleConfiguratorOpen}
+    >
+      <Icon fontSize="small" color="inherit">
+        settings
+      </Icon>
+    </MDBox>
+  );
+
+  return direction === "rtl" ? (
+    <CacheProvider value={rtlCache}>
+      <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
+        <CssBaseline />
+        {layout === "dashboard" && (
+          <>
+            <Sidenav
+              color={sidenavColor}
+              brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
+              brandName="Material Dashboard 2"
+              routes={routes}
+              onMouseEnter={handleOnMouseEnter}
+              onMouseLeave={handleOnMouseLeave}
+            />
+            <Configurator />
+            {configsButton}
+          </>
+        )}
+        {layout === "vr" && <Configurator />}
+        <Routes>
+          {getRoutes(routes)}
+          <Route path="*" element={<Navigate to="/dashboard" />} />
+        </Routes>
+      </ThemeProvider>
+    </CacheProvider>
+  ) : (
+    <ThemeProvider theme={darkMode ? themeDark : theme}>
+      <CssBaseline />
+      {layout === "dashboard" && (
+        <>
+          <Sidenav
+            color={sidenavColor}
+            brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}
+            brandName="Material Dashboard 2"
+            routes={routes}
+            onMouseEnter={handleOnMouseEnter}
+            onMouseLeave={handleOnMouseLeave}
+          />
+          <Configurator />
+          {configsButton}
+        </>
+      )}
+      {layout === "vr" && <Configurator />}
+      <Routes>
+        {getRoutes(routes)}
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </ThemeProvider>
   );
 }
-
-export default App;
