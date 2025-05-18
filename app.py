@@ -1001,21 +1001,114 @@ def settings():
 @app.route("/settings/update", methods=["POST"])
 @parent_required
 def update_settings():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
+    user = current_user
+    family = user.family
     
-    family_name = request.form.get("family_name", family["name"])
+    family_name = request.form.get("family_name", family.name)
     hourly_rate = request.form.get("hourly_rate", DEFAULT_HOURLY_RATE, type=float)
     
     if hourly_rate <= 0:
         flash("Hourly rate must be greater than zero", "danger")
         return redirect(url_for("settings"))
     
-    family["name"] = family_name
-    family["hourly_rate"] = hourly_rate
+    family.name = family_name
+    family.hourly_rate = hourly_rate
     
+    db.session.commit()
     flash("Settings updated successfully", "success")
-    save_data()
+    return redirect(url_for("settings"))
+
+@app.route("/settings/family/add", methods=["POST"])
+@parent_required
+def add_family_member():
+    username = request.form.get("username")
+    password = request.form.get("password")
+    role = request.form.get("role", "child")  # Default to child if not specified
+    
+    # Validate input
+    if not username or not password:
+        flash("Username and password are required", "danger")
+        return redirect(url_for("settings"))
+    
+    # Check if username already exists
+    if User.query.filter_by(username=username).first():
+        flash(f"Username '{username}' already exists", "danger")
+        return redirect(url_for("settings"))
+    
+    # Create the new user
+    new_user = User(
+        username=username,
+        password_hash=generate_password_hash(password),
+        role=role,
+        family_id=current_user.family_id
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    
+    flash(f"New family member '{username}' added successfully", "success")
+    return redirect(url_for("settings"))
+
+@app.route("/settings/family/edit/<int:user_id>", methods=["POST"])
+@parent_required
+def edit_family_member(user_id):
+    # Get the user to edit
+    member = User.query.get_or_404(user_id)
+    
+    # Ensure the user belongs to the same family
+    if member.family_id != current_user.family_id:
+        flash("You don't have permission to edit this user", "danger")
+        return redirect(url_for("settings"))
+    
+    username = request.form.get(f"username_{user_id}")
+    new_password = request.form.get(f"password_{user_id}")
+    
+    # Validate input
+    if not username:
+        flash("Username is required", "danger")
+        return redirect(url_for("settings"))
+    
+    # Check if username already exists and belongs to another user
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user and existing_user.id != user_id:
+        flash(f"Username '{username}' already exists", "danger")
+        return redirect(url_for("settings"))
+    
+    # Update the user
+    member.username = username
+    if new_password:
+        member.password_hash = generate_password_hash(new_password)
+    
+    db.session.commit()
+    flash(f"Family member updated successfully", "success")
+    return redirect(url_for("settings"))
+
+@app.route("/settings/family/delete/<int:user_id>", methods=["POST"])
+@parent_required
+def delete_family_member(user_id):
+    # Get the user to delete
+    member = User.query.get_or_404(user_id)
+    
+    # Ensure the user belongs to the same family
+    if member.family_id != current_user.family_id:
+        flash("You don't have permission to delete this user", "danger")
+        return redirect(url_for("settings"))
+    
+    # Don't allow deleting the last parent
+    if member.role == "parent":
+        parent_count = User.query.filter_by(family_id=current_user.family_id, role="parent").count()
+        if parent_count <= 1:
+            flash("Cannot delete the last parent account", "danger")
+            return redirect(url_for("settings"))
+    
+    # Don't allow self-deletion
+    if member.id == current_user.id:
+        flash("You cannot delete your own account", "danger")
+        return redirect(url_for("settings"))
+    
+    # Delete the user
+    db.session.delete(member)
+    db.session.commit()
+    flash(f"Family member deleted successfully", "success")
     return redirect(url_for("settings"))
 
 if __name__ == "__main__":
