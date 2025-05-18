@@ -45,8 +45,11 @@
         </div>
         
         <div class="card shadow-sm mt-4">
-            <div class="card-header bg-dark">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Family Members</h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                    <i class="fas fa-plus me-1"></i>Add Member
+                </button>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -56,33 +59,149 @@
                                 <th>Name</th>
                                 <th>Role</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for user_id, user_data in data['users'].items() %}
-                                {% if user_data['family_id'] == family['id'] %}
+                            {% for member in parents + children %}
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="child-avatar me-2" data-child-id="{{ user_data['id'] }}">
-                                                {{ user_data['username'][0] }}
+                                            <div class="child-avatar me-2">
+                                                {{ member.username[0] }}
                                             </div>
-                                            {{ user_data['username'] }}
+                                            {{ member.username }}
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge {{ 'bg-primary' if user_data['role'] == 'parent' else 'bg-info' }}">
-                                            {{ user_data['role']|capitalize }}
+                                        <span class="badge {{ 'bg-primary' if member.role == 'parent' else 'bg-info' }}">
+                                            {{ member.role|capitalize }}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-success">Active</span>
                                     </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editMemberModal{{ member.id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if member.id != user.id %}
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteMemberModal{{ member.id }}">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Edit Member Modal -->
+                                        <div class="modal fade" id="editMemberModal{{ member.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Edit {{ member.username }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form action="{{ url_for('edit_family_member', user_id=member.id) }}" method="post">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="username_{{ member.id }}" class="form-label">Username</label>
+                                                                <input type="text" class="form-control" id="username_{{ member.id }}" 
+                                                                       name="username_{{ member.id }}" value="{{ member.username }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label for="password_{{ member.id }}" class="form-label">New Password (leave blank to keep current)</label>
+                                                                <input type="password" class="form-control" id="password_{{ member.id }}" 
+                                                                       name="password_{{ member.id }}" placeholder="Leave blank to keep current password">
+                                                                <div class="form-text">Only enter a password if you want to change it.</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Delete Member Modal -->
+                                        {% if member.id != user.id %}
+                                        <div class="modal fade" id="deleteMemberModal{{ member.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Delete {{ member.username }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to delete {{ member.username }}?</p>
+                                                        <p class="text-danger">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                                            This action cannot be undone. All chore completions, goals, and behavior records for this user will be deleted.
+                                                        </p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="{{ url_for('delete_family_member', user_id=member.id) }}" method="post">
+                                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </td>
                                 </tr>
-                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Member Modal -->
+        <div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add Family Member</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="{{ url_for('add_family_member') }}" method="post">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="role" id="roleChild" value="child" checked>
+                                    <label class="form-check-label" for="roleChild">
+                                        Child
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="role" id="roleParent" value="parent">
+                                    <label class="form-check-label" for="roleParent">
+                                        Parent
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Add Member</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -115,7 +234,7 @@
                         <strong>Hourly Rate:</strong> ${{ family.hourly_rate }}/hour
                     </p>
                     <p class="mb-2">
-                        <strong>Family Members:</strong> {{ family.parent_ids|length + family.child_ids|length }}
+                        <strong>Family Members:</strong> {{ parents|length + children|length }}
                     </p>
                 </div>
                 
@@ -123,10 +242,10 @@
                 
                 <h6>In Your App:</h6>
                 <ul>
-                    <li>{{ data['chores']|length }} chores configured</li>
-                    <li>{{ data['goals']|length }} goals set up</li>
-                    <li>{{ data['chore_completions']|length }} chore completions recorded</li>
-                    <li>{{ data['behavior_records']|length }} behavior records</li>
+                    <li>{{ chore_count }} chores configured</li>
+                    <li>{{ goal_count }} goals set up</li>
+                    <li>{{ completion_count }} chore completions recorded</li>
+                    <li>{{ behavior_count }} behavior records</li>
                 </ul>
             </div>
         </div>

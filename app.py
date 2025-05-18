@@ -206,6 +206,12 @@ with app.app_context():
 # Make utility functions available to all templates
 @app.context_processor
 def inject_utilities():
+    """Add utility functions to templates"""
+    def now():
+        return datetime.datetime.now()
+    
+    return dict(now=now)
+def inject_utilities():
     return {
         'datetime': datetime,
         'now': datetime.datetime.now,
@@ -984,18 +990,37 @@ def calendar_events():
 @app.route("/settings")
 @login_required
 def settings():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
-    is_parent = user["role"] == "parent"
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
     
     if not is_parent:
         flash("Only parents can access settings", "warning")
         return redirect(url_for("dashboard"))
     
+    # Get all family members
+    family_members = User.query.filter_by(family_id=family.id).all()
+    
+    # Separate parents and children
+    parents = [member for member in family_members if member.role == "parent"]
+    children = [member for member in family_members if member.role == "child"]
+    
+    # Get app statistics
+    chore_count = Chore.query.filter_by(family_id=family.id).count()
+    goal_count = Goal.query.filter_by(family_id=family.id).count()
+    completion_count = ChoreCompletion.query.join(Chore).filter(Chore.family_id == family.id).count()
+    behavior_count = BehaviorRecord.query.filter_by(family_id=family.id).count()
+    
     return render_template(
         "settings.html",
         user=user,
-        family=family
+        family=family,
+        parents=parents,
+        children=children,
+        chore_count=chore_count,
+        goal_count=goal_count,
+        completion_count=completion_count,
+        behavior_count=behavior_count
     )
 
 @app.route("/settings/update", methods=["POST"])
