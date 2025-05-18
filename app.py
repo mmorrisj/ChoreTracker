@@ -291,99 +291,126 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
+    # Get current user and family information
+    user = current_user
+    family = user.family
     
     # Get the user's role (parent or child)
-    is_parent = user["role"] == "parent"
+    is_parent = user.role == "parent"
     
     # If parent, get all children in the family
     children = []
     if is_parent:
-        for child_id in family["child_ids"]:
-            child = data["users"].get(child_id)
-            if child:
-                child_data = {
-                    "id": child["id"],
-                    "username": child["username"],
-                    "earnings": calculate_child_earnings(child["id"]),
-                    "goals": []
-                }
-                
-                # Get this child's goals
-                for goal_id, goal in data["goals"].items():
-                    if goal["family_id"] == family["id"] and goal["user_id"] == child["id"]:
-                        goal_progress = (goal["current_amount"] / goal["amount"]) * 100
-                        child_data["goals"].append({
-                            "id": goal["id"],
-                            "name": goal["name"],
-                            "progress": goal_progress,
-                            "current_amount": goal["current_amount"],
-                            "amount": goal["amount"]
-                        })
-                
-                children.append(child_data)
+        # Query children in this family
+        family_children = User.query.filter_by(
+            family_id=family.id, 
+            role="child"
+        ).all()
+        
+        for child in family_children:
+            child_data = {
+                "id": child.id,
+                "username": child.username,
+                "earnings": calculate_child_earnings(child.id),
+                "goals": []
+            }
+            
+            # Get this child's goals
+            child_goals = Goal.query.filter_by(
+                family_id=family.id,
+                user_id=child.id
+            ).all()
+            
+            for goal in child_goals:
+                goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+                child_data["goals"].append({
+                    "id": goal.id,
+                    "name": goal.name,
+                    "progress": goal_progress,
+                    "current_amount": goal.current_amount,
+                    "amount": goal.amount
+                })
+            
+            children.append(child_data)
     
     # Get family goals
     family_goals = []
-    for goal_id, goal in data["goals"].items():
-        if goal["family_id"] == family["id"] and goal["is_family_goal"]:
-            goal_progress = (goal["current_amount"] / goal["amount"]) * 100
-            family_goals.append({
-                "id": goal["id"],
-                "name": goal["name"],
-                "progress": goal_progress,
-                "current_amount": goal["current_amount"],
-                "amount": goal["amount"]
-            })
+    family_goal_records = Goal.query.filter_by(
+        family_id=family.id,
+        is_family_goal=True
+    ).all()
+    
+    for goal in family_goal_records:
+        goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+        family_goals.append({
+            "id": goal.id,
+            "name": goal.name,
+            "progress": goal_progress,
+            "current_amount": goal.current_amount,
+            "amount": goal.amount
+        })
     
     # Get recent chore completions
-    recent_completions = []
-    for completion_id, completion in data["chore_completions"].items():
-        chore = data["chores"].get(completion["chore_id"])
-        if chore and chore["family_id"] == family["id"]:
-            child = data["users"].get(completion["user_id"])
-            if child:
-                recent_completions.append({
-                    "id": completion["id"],
-                    "chore_name": chore["name"],
-                    "child_name": child["username"],
-                    "date": completion["date"],
-                    "amount_earned": completion["amount_earned"]
-                })
+    # First get all chores belonging to the family
+    family_chores = Chore.query.filter_by(family_id=family.id).all()
+    chore_ids = [chore.id for chore in family_chores]
     
-    # Sort completions by date (most recent first)
-    recent_completions.sort(key=lambda x: x["date"], reverse=True)
-    recent_completions = recent_completions[:5]  # Limit to 5 most recent
+    recent_completions = []
+    if chore_ids:  # Only query if there are chores
+        completions = ChoreCompletion.query.filter(
+            ChoreCompletion.chore_id.in_(chore_ids)
+        ).order_by(ChoreCompletion.date.desc()).limit(5).all()
+        
+        for completion in completions:
+            chore = Chore.query.get(completion.chore_id)
+            child = User.query.get(completion.user_id)
+            if chore and child:
+                recent_completions.append({
+                    "id": completion.id,
+                    "chore_name": chore.name,
+                    "child_name": child.username,
+                    "date": completion.date.strftime("%Y-%m-%d"),
+                    "amount_earned": completion.amount_earned
+                })
     
     # If user is a child, get their specific data
     if not is_parent:
-        child_id = user["id"]
+        child_id = user.id
         earnings = calculate_child_earnings(child_id)
         
         # Get child's goals
         my_goals = []
-        for goal_id, goal in data["goals"].items():
-            if goal["family_id"] == family["id"] and goal["user_id"] == child_id:
-                goal_progress = (goal["current_amount"] / goal["amount"]) * 100
-                my_goals.append({
-                    "id": goal["id"],
-                    "name": goal["name"],
-                    "progress": goal_progress,
-                    "current_amount": goal["current_amount"],
-                    "amount": goal["amount"]
-                })
+        child_goals = Goal.query.filter_by(
+            family_id=family.id,
+            user_id=child_id,
+            is_family_goal=False
+        ).all()
+        
+        for goal in child_goals:
+            goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+            my_goals.append({
+                "id": goal.id,
+                "name": goal.name,
+                "progress": goal_progress,
+                "current_amount": goal.current_amount,
+                "amount": goal.amount
+            })
         
         # Get child's assigned chores
         my_chores = []
-        for chore_id, chore in data["chores"].items():
-            if chore["family_id"] == family["id"] and chore["assigned_to"] == child_id:
-                my_chores.append({
-                    "id": chore["id"],
-                    "name": chore["name"],
-                    "description": chore["description"],
-                    "estimated_time_minutes": chore["estimated_time_minutes"]
-                })
+        child_chores = Chore.query.filter_by(
+            family_id=family.id,
+            assigned_to=child_id
+        ).all()
+        
+        for chore in child_chores:
+            my_chores.append({
+                "id": chore.id,
+                "name": chore.name,
+                "description": chore.description,
+                "estimated_time_minutes": chore.estimated_time_minutes,
+                "frequency": chore.frequency
+            })
         
         return render_template(
             "dashboard.html", 
