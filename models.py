@@ -1,93 +1,115 @@
-from app import data
+from app import db
+from flask_login import UserMixin
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Date, Text
+import datetime
 
-# This file is mostly for documentation purposes since we're using
-# in-memory storage rather than a database. In a real application,
-# we would define SQLAlchemy models here.
-
-class User:
+class User(UserMixin, db.Model):
     """
     Represents a user in the system, which can be either a parent or a child.
-    
-    Attributes:
-        id (str): Unique identifier for the user
-        username (str): Username for login
-        password_hash (str): Hashed password for security
-        role (str): Either 'parent' or 'child'
-        family_id (str): ID of the family the user belongs to
     """
-    pass
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # 'parent' or 'child'
+    family_id = db.Column(db.Integer, db.ForeignKey('families.id'))
+    
+    # Relationships
+    family = db.relationship('Family', back_populates='users')
+    assigned_chores = db.relationship('Chore', back_populates='assigned_to_user', foreign_keys='Chore.assigned_to')
+    chore_completions = db.relationship('ChoreCompletion', back_populates='user')
+    goals = db.relationship('Goal', back_populates='user')
+    behavior_records = db.relationship('BehaviorRecord', back_populates='user')
 
-class Family:
+class Family(db.Model):
     """
     Represents a family unit containing parents and children.
-    
-    Attributes:
-        id (str): Unique identifier for the family
-        name (str): Family name
-        hourly_rate (float): Default hourly rate for chore compensation
-        parent_ids (list): List of parent user IDs
-        child_ids (list): List of child user IDs
     """
-    pass
+    __tablename__ = 'families'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    hourly_rate = db.Column(db.Float, default=10.0)
+    
+    # Relationships
+    users = db.relationship('User', back_populates='family')
+    chores = db.relationship('Chore', back_populates='family')
+    goals = db.relationship('Goal', back_populates='family')
+    behavior_records = db.relationship('BehaviorRecord', back_populates='family')
 
-class Chore:
+class Chore(db.Model):
     """
     Represents a household chore that can be assigned to children.
-    
-    Attributes:
-        id (str): Unique identifier for the chore
-        family_id (str): ID of the family the chore belongs to
-        name (str): Name of the chore
-        description (str): Detailed description of the chore
-        estimated_time_minutes (int): Estimated time to complete in minutes
-        assigned_to (str): ID of the child assigned to the chore
-        frequency (str): How often the chore should be done (daily, weekly, etc.)
-        status (str): Current status of the chore (active, inactive)
     """
-    pass
+    __tablename__ = 'chores'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    estimated_time_minutes = db.Column(db.Integer, default=30)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'))
+    frequency = db.Column(db.String(20), default='daily')  # daily, weekly, monthly, once
+    status = db.Column(db.String(20), default='active')  # active, inactive
+    
+    # Relationships
+    family = db.relationship('Family', back_populates='chores')
+    assigned_to_user = db.relationship('User', back_populates='assigned_chores', foreign_keys=[assigned_to])
+    completions = db.relationship('ChoreCompletion', back_populates='chore')
 
-class ChoreCompletion:
+class ChoreCompletion(db.Model):
     """
     Represents a record of a completed chore.
-    
-    Attributes:
-        id (str): Unique identifier for the completion record
-        chore_id (str): ID of the completed chore
-        user_id (str): ID of the child who completed the chore
-        date (str): Date when the chore was completed
-        time_spent_minutes (int): Actual time spent in minutes
-        amount_earned (float): Money earned for completing the chore
-        status (str): Status of the completion (completed, verified)
     """
-    pass
+    __tablename__ = 'chore_completions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    chore_id = db.Column(db.Integer, db.ForeignKey('chores.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date = db.Column(db.Date, default=datetime.date.today)
+    time_spent_minutes = db.Column(db.Integer, nullable=False)
+    amount_earned = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='completed')  # completed, verified
+    
+    # Relationships
+    chore = db.relationship('Chore', back_populates='completions')
+    user = db.relationship('User', back_populates='chore_completions')
 
-class Goal:
+class Goal(db.Model):
     """
     Represents a savings goal for a child or the family.
-    
-    Attributes:
-        id (str): Unique identifier for the goal
-        family_id (str): ID of the family the goal belongs to
-        user_id (str): ID of the child if it's an individual goal, None if family goal
-        name (str): Name of the goal
-        description (str): Detailed description of the goal
-        amount (float): Total amount needed to reach the goal
-        current_amount (float): Current amount saved toward the goal
-        is_family_goal (bool): Whether this is a family goal or individual goal
     """
-    pass
+    __tablename__ = 'goals'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    amount = db.Column(db.Float, nullable=False)
+    current_amount = db.Column(db.Float, default=0.0)
+    is_family_goal = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    family = db.relationship('Family', back_populates='goals')
+    user = db.relationship('User', back_populates='goals')
 
-class BehaviorRecord:
+class BehaviorRecord(db.Model):
     """
     Represents a record of behavioral awards or deductions.
-    
-    Attributes:
-        id (str): Unique identifier for the behavior record
-        family_id (str): ID of the family the record belongs to
-        user_id (str): ID of the child to whom the behavior applies
-        date (str): Date when the behavior occurred
-        description (str): Description of the behavior
-        amount (float): Amount awarded or deducted
-        is_positive (bool): Whether this is a positive (award) or negative (deduction)
     """
-    pass
+    __tablename__ = 'behavior_records'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date = db.Column(db.Date, default=datetime.date.today)
+    description = db.Column(db.Text, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    is_positive = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    family = db.relationship('Family', back_populates='behavior_records')
+    user = db.relationship('User', back_populates='behavior_records')

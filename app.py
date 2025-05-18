@@ -5,6 +5,8 @@ import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -14,184 +16,198 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# In-memory data storage
-data = {
-    "families": {},
-    "users": {},
-    "chores": {},
-    "goals": {},
-    "behavior_records": {},
-    "chore_completions": {}
+# Configure database
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
 }
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Load user for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    from models import User
+    return User.query.get(int(user_id))
 
 # Default hourly rate
 DEFAULT_HOURLY_RATE = 10.0
 
-# Helper functions for data management
-def save_data():
-    # In a real app, this would save to a database
-    # Here we're just keeping everything in memory
-    pass
+# Import models after db is defined
+from models import User, Family, Chore, ChoreCompletion, Goal, BehaviorRecord
 
-def load_data():
-    # In a real app, this would load from a database
-    # Here we're just initializing with some demo data if empty
-    if not data["users"]:
-        # Create a demo parent account
-        data["users"]["parent1"] = {
-            "id": "parent1",
-            "username": "parent",
-            "password_hash": generate_password_hash("password"),
-            "role": "parent",
-            "family_id": "family1"
-        }
-        
-        # Create demo children accounts
-        data["users"]["child1"] = {
-            "id": "child1",
-            "username": "emma",
-            "password_hash": generate_password_hash("password"),
-            "role": "child",
-            "family_id": "family1"
-        }
-        
-        data["users"]["child2"] = {
-            "id": "child2",
-            "username": "noah",
-            "password_hash": generate_password_hash("password"),
-            "role": "child",
-            "family_id": "family1"
-        }
-        
+# Database initialization
+def init_db():
+    # Create tables if they don't exist
+    db.create_all()
+    
+    # Check if there are any users in the database
+    if User.query.count() == 0:
         # Create a demo family
-        data["families"]["family1"] = {
-            "id": "family1",
-            "name": "Smith Family",
-            "hourly_rate": DEFAULT_HOURLY_RATE,
-            "parent_ids": ["parent1"],
-            "child_ids": ["child1", "child2"]
-        }
+        demo_family = Family(
+            name="Smith Family",
+            hourly_rate=DEFAULT_HOURLY_RATE
+        )
+        db.session.add(demo_family)
+        db.session.commit()  # Commit to get the ID
+        
+        # Create demo parent user
+        parent = User(
+            username="parent",
+            password_hash=generate_password_hash("password"),
+            role="parent",
+            family_id=demo_family.id
+        )
+        db.session.add(parent)
+        
+        # Create demo child users
+        emma = User(
+            username="emma",
+            password_hash=generate_password_hash("password"),
+            role="child",
+            family_id=demo_family.id
+        )
+        db.session.add(emma)
+        
+        noah = User(
+            username="noah",
+            password_hash=generate_password_hash("password"),
+            role="child",
+            family_id=demo_family.id
+        )
+        db.session.add(noah)
+        db.session.commit()  # Commit to get IDs
         
         # Add some default chores
-        data["chores"]["chore1"] = {
-            "id": "chore1",
-            "family_id": "family1",
-            "name": "Wash dishes",
-            "description": "Wash all dishes and put them away",
-            "estimated_time_minutes": 30,
-            "assigned_to": "child1",
-            "frequency": "daily",
-            "status": "active"
-        }
+        chore1 = Chore(
+            family_id=demo_family.id,
+            name="Wash dishes",
+            description="Wash all dishes and put them away",
+            estimated_time_minutes=30,
+            assigned_to=emma.id,
+            frequency="daily",
+            status="active"
+        )
+        db.session.add(chore1)
         
-        data["chores"]["chore2"] = {
-            "id": "chore2",
-            "family_id": "family1",
-            "name": "Vacuum living room",
-            "description": "Vacuum the entire living room",
-            "estimated_time_minutes": 20,
-            "assigned_to": "child2",
-            "frequency": "weekly",
-            "status": "active"
-        }
+        chore2 = Chore(
+            family_id=demo_family.id,
+            name="Vacuum living room",
+            description="Vacuum the entire living room",
+            estimated_time_minutes=20,
+            assigned_to=noah.id,
+            frequency="weekly",
+            status="active"
+        )
+        db.session.add(chore2)
         
-        data["chores"]["chore3"] = {
-            "id": "chore3",
-            "family_id": "family1",
-            "name": "Take out trash",
-            "description": "Empty all trash bins and take to curb",
-            "estimated_time_minutes": 15,
-            "assigned_to": "child1",
-            "frequency": "weekly",
-            "status": "active"
-        }
+        chore3 = Chore(
+            family_id=demo_family.id,
+            name="Take out trash",
+            description="Empty all trash bins and take to curb",
+            estimated_time_minutes=15,
+            assigned_to=emma.id,
+            frequency="weekly",
+            status="active"
+        )
+        db.session.add(chore3)
         
         # Add some goals
-        data["goals"]["goal1"] = {
-            "id": "goal1",
-            "family_id": "family1",
-            "user_id": "child1",
-            "name": "New video game",
-            "description": "Save for the latest game",
-            "amount": 60.00,
-            "current_amount": 15.00,
-            "is_family_goal": False
-        }
+        goal1 = Goal(
+            family_id=demo_family.id,
+            user_id=emma.id,
+            name="New video game",
+            description="Save for the latest game",
+            amount=60.00,
+            current_amount=15.00,
+            is_family_goal=False
+        )
+        db.session.add(goal1)
         
-        data["goals"]["goal2"] = {
-            "id": "goal2",
-            "family_id": "family1",
-            "user_id": "child2",
-            "name": "Lego set",
-            "description": "Save for the new space Lego set",
-            "amount": 100.00,
-            "current_amount": 25.00,
-            "is_family_goal": False
-        }
+        goal2 = Goal(
+            family_id=demo_family.id,
+            user_id=noah.id,
+            name="Lego set",
+            description="Save for the new space Lego set",
+            amount=100.00,
+            current_amount=25.00,
+            is_family_goal=False
+        )
+        db.session.add(goal2)
         
-        data["goals"]["goal3"] = {
-            "id": "goal3",
-            "family_id": "family1",
-            "user_id": None,
-            "name": "Family movie night",
-            "description": "Everyone contributes to a special movie night with pizza",
-            "amount": 50.00,
-            "current_amount": 20.00,
-            "is_family_goal": True
-        }
+        goal3 = Goal(
+            family_id=demo_family.id,
+            name="Family movie night",
+            description="Everyone contributes to a special movie night with pizza",
+            amount=50.00,
+            current_amount=20.00,
+            is_family_goal=True
+        )
+        db.session.add(goal3)
         
         # Add some behavior records
-        data["behavior_records"]["behavior1"] = {
-            "id": "behavior1",
-            "family_id": "family1",
-            "user_id": "child1",
-            "date": datetime.datetime.now().strftime("%Y-%m-%d"),
-            "description": "Helped sibling with homework",
-            "amount": 5.00,
-            "is_positive": True
-        }
+        behavior1 = BehaviorRecord(
+            family_id=demo_family.id,
+            user_id=emma.id,
+            date=datetime.date.today(),
+            description="Helped sibling with homework",
+            amount=5.00,
+            is_positive=True
+        )
+        db.session.add(behavior1)
         
-        data["behavior_records"]["behavior2"] = {
-            "id": "behavior2",
-            "family_id": "family1",
-            "user_id": "child2",
-            "date": datetime.datetime.now().strftime("%Y-%m-%d"),
-            "description": "Cleaned room without being asked",
-            "amount": 3.00,
-            "is_positive": True
-        }
+        behavior2 = BehaviorRecord(
+            family_id=demo_family.id,
+            user_id=noah.id,
+            date=datetime.date.today(),
+            description="Cleaned room without being asked",
+            amount=3.00,
+            is_positive=True
+        )
+        db.session.add(behavior2)
         
         # Add some chore completions
-        yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        data["chore_completions"]["completion1"] = {
-            "id": "completion1",
-            "chore_id": "chore1",
-            "user_id": "child1",
-            "date": yesterday,
-            "time_spent_minutes": 35,
-            "amount_earned": (35/60) * DEFAULT_HOURLY_RATE,
-            "status": "completed"
-        }
+        yesterday = datetime.date.today() - datetime.timedelta(days=1)
+        completion1 = ChoreCompletion(
+            chore_id=1,
+            user_id=emma.id,
+            date=yesterday,
+            time_spent_minutes=35,
+            amount_earned=(35/60) * DEFAULT_HOURLY_RATE,
+            status="completed"
+        )
+        db.session.add(completion1)
         
-        data["chore_completions"]["completion2"] = {
-            "id": "completion2",
-            "chore_id": "chore3",
-            "user_id": "child1",
-            "date": yesterday,
-            "time_spent_minutes": 20,
-            "amount_earned": (20/60) * DEFAULT_HOURLY_RATE,
-            "status": "completed"
-        }
+        completion2 = ChoreCompletion(
+            chore_id=3,
+            user_id=emma.id,
+            date=yesterday,
+            time_spent_minutes=20,
+            amount_earned=(20/60) * DEFAULT_HOURLY_RATE,
+            status="completed"
+        )
+        db.session.add(completion2)
+        
+        # Commit all changes
+        db.session.commit()
 
-# Load data at startup
-load_data()
+# Initialize database
+with app.app_context():
+    init_db()
 
-# Make data available to all templates
+# Make utility functions available to all templates
 @app.context_processor
-def inject_data():
-    import datetime
+def inject_utilities():
     return {
-        'data': data,
+        'datetime': datetime,
         'now': datetime.datetime.now,
         'today': datetime.date.today
     }
@@ -201,24 +217,24 @@ def calculate_child_earnings(child_id):
     total_earnings = 0
     
     # Add earnings from chores
-    for completion_id, completion in data["chore_completions"].items():
-        if completion["user_id"] == child_id:
-            total_earnings += completion["amount_earned"]
+    completions = ChoreCompletion.query.filter_by(user_id=child_id).all()
+    for completion in completions:
+        total_earnings += completion.amount_earned
     
     # Add earnings from behavior (positive and negative)
-    for behavior_id, behavior in data["behavior_records"].items():
-        if behavior["user_id"] == child_id:
-            if behavior["is_positive"]:
-                total_earnings += behavior["amount"]
-            else:
-                total_earnings -= behavior["amount"]
+    behaviors = BehaviorRecord.query.filter_by(user_id=child_id).all()
+    for behavior in behaviors:
+        if behavior.is_positive:
+            total_earnings += behavior.amount
+        else:
+            total_earnings -= behavior.amount
     
     return total_earnings
 
 # Authentication check
 def login_required(f):
     def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
+        if not current_user.is_authenticated:
             flash("Please log in to access this page", "warning")
             return redirect(url_for("login"))
         return f(*args, **kwargs)
@@ -227,12 +243,11 @@ def login_required(f):
 
 def parent_required(f):
     def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
+        if not current_user.is_authenticated:
             flash("Please log in to access this page", "warning")
             return redirect(url_for("login"))
         
-        user = data["users"].get(session["user_id"])
-        if not user or user["role"] != "parent":
+        if current_user.role != "parent":
             flash("This action requires parent permissions", "danger")
             return redirect(url_for("dashboard"))
         return f(*args, **kwargs)
@@ -242,34 +257,34 @@ def parent_required(f):
 # Routes
 @app.route("/")
 def index():
-    if "user_id" in session:
+    if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
     return redirect(url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard"))
+        
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
         
-        user = None
-        for user_id, user_data in data["users"].items():
-            if user_data["username"] == username:
-                user = user_data
-                break
+        user = User.query.filter_by(username=username).first()
         
-        if user and check_password_hash(user["password_hash"], password):
-            session["user_id"] = user["id"]
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
             flash(f"Welcome back, {username}!", "success")
             return redirect(url_for("dashboard"))
         else:
             flash("Invalid username or password", "danger")
     
-    return render_template("login.html", data=data)
+    return render_template("login.html")
 
 @app.route("/logout")
+@login_required
 def logout():
-    session.pop("user_id", None)
+    logout_user()
     flash("You have been logged out successfully", "success")
     return redirect(url_for("login"))
 
