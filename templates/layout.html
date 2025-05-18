@@ -33,7 +33,7 @@
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
-                {% if session.get('user_id') %}
+                {% if current_user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
@@ -60,7 +60,7 @@
                             <i class="fas fa-calendar-alt me-1"></i>Calendar
                         </a>
                     </li>
-                    {% if session.get('user_id') and data and data['users'][session['user_id']]['role'] == 'parent' %}
+                    {% if current_user.role == 'parent' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}" href="{{ url_for('settings') }}">
                             <i class="fas fa-cog me-1"></i>Settings
