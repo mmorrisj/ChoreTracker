@@ -207,11 +207,6 @@ with app.app_context():
 @app.context_processor
 def inject_utilities():
     """Add utility functions to templates"""
-    def now():
-        return datetime.datetime.now()
-    
-    return dict(now=now)
-def inject_utilities():
     return {
         'datetime': datetime,
         'now': datetime.datetime.now,
