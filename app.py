@@ -186,6 +186,11 @@ def load_data():
 # Load data at startup
 load_data()
 
+# Make data available to all templates
+@app.context_processor
+def inject_data():
+    return {'data': data}
+
 # Helper function to calculate earnings
 def calculate_child_earnings(child_id):
     total_earnings = 0
@@ -255,7 +260,7 @@ def login():
         else:
             flash("Invalid username or password", "danger")
     
-    return render_template("login.html")
+    return render_template("login.html", data=data)
 
 @app.route("/logout")
 def logout():
