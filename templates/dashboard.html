@@ -1,0 +1,470 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">
+            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+        </h1>
+        <p class="text-muted">
+            {{ family.name }} - 
+            {% if is_parent %}
+            Parent View
+            {% else %}
+            Child View
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+{% if is_parent %}
+<!-- Parent Dashboard -->
+<div class="row mb-4">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Children's Earnings</h5>
+            </div>
+            <div class="card-body p-3">
+                <div class="row">
+                    {% for child in children %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card child-card" data-child-id="{{ child.id }}">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="child-avatar me-3" data-child-id="{{ child.id }}">
+                                        {{ child.username[0] }}
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-0">{{ child.username }}</h5>
+                                        <div class="child-earnings" data-child-id="{{ child.id }}" data-earned="{{ child.earnings }}">
+                                            <span class="text-success">${{ "%.2f"|format(child.earnings) }}</span> earned
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-5">
+                                        <div style="height: 80px; width: 80px;">
+                                            <canvas class="child-earnings-chart" data-child-id="{{ child.id }}"></canvas>
+                                        </div>
+                                    </div>
+                                    <div class="col-7">
+                                        {% if child.goals %}
+                                        <p class="mb-1 small">Goals Progress:</p>
+                                        {% for goal in child.goals[:2] %}
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between align-items-center small">
+                                                <span>{{ goal.name }}</span>
+                                                <span>${{ "%.0f"|format(goal.current_amount) }}/${{ "%.0f"|format(goal.amount) }}</span>
+                                            </div>
+                                            <div class="goal-progress-bar-container">
+                                                <div class="goal-progress-bar" data-progress="{{ goal.progress }}" style="width: {{ goal.progress }}%;"></div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        {% else %}
+                                        <p class="text-muted small">No active goals</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 d-flex justify-content-between">
+                                    <button class="btn btn-success btn-sm btn-behavior" data-behavior-type="positive" data-child-id="{{ child.id }}" data-child-name="{{ child.username }}">
+                                        <i class="fas fa-plus-circle me-1"></i>Award
+                                    </button>
+                                    <button class="btn btn-danger btn-sm btn-behavior" data-behavior-type="negative" data-child-id="{{ child.id }}" data-child-name="{{ child.username }}">
+                                        <i class="fas fa-minus-circle me-1"></i>Deduct
+                                    </button>
+                                    <a href="{{ url_for('goals') }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-bullseye me-1"></i>Goals
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Chore Completions</h5>
+                <a href="{{ url_for('chores') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-tasks me-1"></i>Manage Chores
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% if recent_completions %}
+                        {% for completion in recent_completions %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">{{ completion.chore_name }}</h6>
+                                    <p class="text-muted mb-0 small">
+                                        Completed by {{ completion.child_name }} on {{ completion.date }}
+                                    </p>
+                                </div>
+                                <span class="badge bg-success">${{ "%.2f"|format(completion.amount_earned) }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item text-center py-4">
+                            <p class="text-muted mb-0">No recent chore completions</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Family Goal</h5>
+            </div>
+            <div class="card-body">
+                {% if family_goals %}
+                    {% for goal in family_goals %}
+                    <div class="text-center mb-3">
+                        <h4>{{ goal.name }}</h4>
+                        <div class="goal-chart-container mb-3">
+                            <canvas class="goal-progress-chart" 
+                                    data-goal-id="{{ goal.id }}"
+                                    data-goal-name="{{ goal.name }}"
+                                    data-current-amount="{{ goal.current_amount }}"
+                                    data-goal-amount="{{ goal.amount }}"></canvas>
+                        </div>
+                        <p>${{ "%.2f"|format(goal.current_amount) }} of ${{ "%.2f"|format(goal.amount) }}</p>
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" 
+                                 style="width: {{ goal.progress }}%;" 
+                                 aria-valuenow="{{ goal.progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ "%.0f"|format(goal.progress) }}%
+                            </div>
+                        </div>
+                        {% if is_parent %}
+                        <button class="btn btn-info btn-contribute" 
+                                data-goal-id="{{ goal.id }}" 
+                                data-goal-name="{{ goal.name }}"
+                                data-remaining-amount="{{ goal.amount - goal.current_amount }}">
+                            <i class="fas fa-plus-circle me-1"></i>Add Funds
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bullseye fa-3x text-muted mb-3"></i>
+                        <h5>No Family Goal Set</h5>
+                        {% if is_parent %}
+                        <p class="text-muted">Create a goal that everyone can contribute to</p>
+                        <a href="{{ url_for('goals') }}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-1"></i>Add Family Goal
+                        </a>
+                        {% else %}
+                        <p class="text-muted">A parent needs to set up a family goal</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Family Activity</h5>
+            </div>
+            <div class="card-body p-3">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-dark">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-check fa-2x mb-2 text-info"></i>
+                                <h6>This Week</h6>
+                                <h3>{{ recent_completions|length }}</h3>
+                                <p class="text-muted mb-0 small">Chores Completed</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-dark">
+                            <div class="card-body text-center">
+                                <i class="fas fa-dollar-sign fa-2x mb-2 text-success"></i>
+                                <h6>Total Earned</h6>
+                                <h3>
+                                    ${{ "%.2f"|format(children|sum(attribute='earnings')) }}
+                                </h3>
+                                <p class="text-muted mb-0 small">All Children</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('calendar') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-calendar-alt me-1"></i>View Calendar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Behavior Modal -->
+<div class="modal fade" id="behaviorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Behavior <span id="behaviorTypeTitle">Award</span> for <span id="behaviorChildName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_behavior') }}" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="behavior_type" id="behaviorType" value="positive">
+                    <input type="hidden" name="user_id" id="behaviorChildId" value="">
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="description" name="description" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount ($)</label>
+                        <input type="number" class="form-control" id="amount" name="amount" min="0.01" step="0.01" value="1.00" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Chore Modal -->
+<div class="modal fade" id="completeChoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complete Chore: <span id="choreNamePlaceholder"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('complete_chore', chore_id='placeholder') }}" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="chore_id" id="choreId" value="">
+                    <input type="hidden" name="child_id" id="childId" value="">
+                    
+                    <p>Record completion for <strong id="childNamePlaceholder"></strong>:</p>
+                    
+                    <div class="mb-3">
+                        <label for="timeSpent" class="form-label">Time Spent (minutes)</label>
+                        <input type="number" class="form-control" id="timeSpent" name="time_spent" min="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="completionDate" class="form-label">Completion Date</label>
+                        <input type="date" class="form-control" id="completionDate" name="completion_date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Complete Chore</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Child Dashboard -->
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">My Earnings</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="goal-chart-container mb-3">
+                    <canvas class="child-earnings-chart" data-child-id="{{ user.id }}"></canvas>
+                    <div class="child-earnings" data-child-id="{{ user.id }}" data-earned="{{ earnings }}" style="display: none;"></div>
+                </div>
+                <h3 class="mb-0">${{ "%.2f"|format(earnings) }}</h3>
+                <p class="text-muted">Total Earned</p>
+                
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <div class="card bg-dark">
+                            <div class="card-body py-3">
+                                <h6 class="text-info mb-1">My Goals</h6>
+                                <h3>{{ my_goals|length }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-dark">
+                            <div class="card-body py-3">
+                                <h6 class="text-success mb-1">Completed</h6>
+                                <h3>{{ recent_completions|length }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">My Chores</h5>
+                <a href="{{ url_for('chores') }}" class="btn btn-sm btn-outline-info">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% if my_chores %}
+                        {% for chore in my_chores %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ chore.name }}</h6>
+                                    <p class="text-muted mb-0 small">
+                                        {{ chore.description|truncate(40) }}
+                                    </p>
+                                </div>
+                                <button class="btn btn-success btn-sm btn-child-complete"
+                                        data-chore-id="{{ chore.id }}"
+                                        data-chore-name="{{ chore.name }}"
+                                        data-chore-time="{{ chore.estimated_time_minutes }}">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item text-center py-4">
+                            <p class="text-muted mb-0">No chores assigned to you</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">My Goals</h5>
+                <a href="{{ url_for('goals') }}" class="btn btn-sm btn-outline-info">View All</a>
+            </div>
+            <div class="card-body">
+                {% if my_goals %}
+                    {% for goal in my_goals %}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0">{{ goal.name }}</h6>
+                            <span>${{ "%.2f"|format(goal.current_amount) }} / ${{ "%.2f"|format(goal.amount) }}</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar 
+                                {% if goal.progress >= 75 %}bg-success
+                                {% elif goal.progress >= 50 %}bg-info
+                                {% elif goal.progress >= 25 %}bg-warning
+                                {% else %}bg-danger{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ goal.progress }}%;" 
+                                aria-valuenow="{{ goal.progress }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">No personal goals set</p>
+                    </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="mt-3">
+                    <h6 class="mb-3">Family Goal</h6>
+                    {% if family_goals %}
+                        {% for goal in family_goals %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span>{{ goal.name }}</span>
+                                <small>${{ "%.2f"|format(goal.current_amount) }} / ${{ "%.2f"|format(goal.amount) }}</small>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-info" 
+                                    role="progressbar" 
+                                    style="width: {{ goal.progress }}%;" 
+                                    aria-valuenow="{{ goal.progress }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No family goal set</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Child Complete Chore Modal -->
+<div class="modal fade" id="childCompleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complete: <span id="childChoreNamePlaceholder"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('complete_chore', chore_id='placeholder') }}" method="post" id="childCompleteForm">
+                <div class="modal-body">
+                    <input type="hidden" id="childChoreId" name="chore_id" value="">
+                    
+                    <div class="mb-3">
+                        <label for="childTimeSpent" class="form-label">How long did it take? (minutes)</label>
+                        <input type="number" class="form-control" id="childTimeSpent" name="time_spent" min="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="childCompletionDate" class="form-label">When did you complete it?</label>
+                        <input type="date" class="form-control" id="childCompletionDate" name="completion_date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i> Your parent will verify this completion.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Mark Complete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

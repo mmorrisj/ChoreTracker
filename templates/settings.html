@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">
+            <i class="fas fa-cog me-2"></i>Settings
+        </h1>
+        <p class="text-muted">
+            Manage your family settings
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Family Settings</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('update_settings') }}" method="post">
+                    <div class="mb-4">
+                        <label for="family_name" class="form-label">Family Name</label>
+                        <input type="text" class="form-control" id="family_name" name="family_name" value="{{ family.name }}" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="hourly_rate" class="form-label">Hourly Rate for Chores</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="hourly_rate" name="hourly_rate" min="0.01" step="0.01" value="{{ family.hourly_rate }}" required>
+                            <span class="input-group-text">per hour</span>
+                        </div>
+                        <div class="form-text">This is the default rate used to calculate earnings for completed chores.</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Save Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Family Members</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user_id, user_data in data['users'].items() %}
+                                {% if user_data['family_id'] == family['id'] %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="child-avatar me-2" data-child-id="{{ user_data['id'] }}">
+                                                {{ user_data['username'][0] }}
+                                            </div>
+                                            {{ user_data['username'] }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ 'bg-primary' if user_data['role'] == 'parent' else 'bg-info' }}">
+                                            {{ user_data['role']|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">About</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <img src="https://pixabay.com/get/gb41d48393e79b76c4f51e7c4a08bf42e9fcf39bdd57231d633bedf45a0e45e3e5503c6fada0dbca46510ce3f55e1bee2efbd1932c810f391087ff376e3d3a598_1280.jpg" 
+                         alt="Family doing chores together" 
+                         class="img-fluid rounded"
+                         style="max-height: 200px; object-fit: cover;">
+                </div>
+                
+                <h5>Family Chore Tracker</h5>
+                <p>Teaching responsibility and money management through chores and goals</p>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <h6>Current Settings:</h6>
+                    <p class="mb-2">
+                        <strong>Family:</strong> {{ family.name }}
+                    </p>
+                    <p class="mb-2">
+                        <strong>Hourly Rate:</strong> ${{ family.hourly_rate }}/hour
+                    </p>
+                    <p class="mb-2">
+                        <strong>Family Members:</strong> {{ family.parent_ids|length + family.child_ids|length }}
+                    </p>
+                </div>
+                
+                <hr>
+                
+                <h6>In Your App:</h6>
+                <ul>
+                    <li>{{ data['chores']|length }} chores configured</li>
+                    <li>{{ data['goals']|length }} goals set up</li>
+                    <li>{{ data['chore_completions']|length }} chore completions recorded</li>
+                    <li>{{ data['behavior_records']|length }} behavior records</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Tips</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">Making the Most of Chore Tracker:</h6>
+                <ul>
+                    <li><strong>Consistent Hourly Rate:</strong> Set a fair rate that motivates without overvaluing chores.</li>
+                    <li><strong>Age-Appropriate Chores:</strong> Assign chores suitable for each child's abilities.</li>
+                    <li><strong>Balance Rewards:</strong> Combine financial rewards with praise and recognition.</li>
+                    <li><strong>Goal Setting:</strong> Help children set meaningful, achievable goals.</li>
+                    <li><strong>Regular Review:</strong> Discuss progress weekly to keep everyone motivated.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

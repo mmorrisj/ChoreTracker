@@ -1,0 +1,303 @@
+{% extends "layout.html" %}
+
+{% block title %}Calendar{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">
+            <i class="fas fa-calendar-alt me-2"></i>Calendar
+        </h1>
+        <p class="text-muted">
+            View and manage chores and behavior records
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Family Calendar</h5>
+                <div>
+                    {% if is_parent %}
+                    <button class="btn btn-success btn-sm calendar-add-event me-2" data-event-type="chore">
+                        <i class="fas fa-plus me-1"></i>Add Completion
+                    </button>
+                    <button class="btn btn-info btn-sm calendar-add-event" data-event-type="behavior">
+                        <i class="fas fa-plus me-1"></i>Add Behavior
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if is_parent %}
+                <div class="mb-3">
+                    <label for="childFilter" class="form-label">Filter by Child:</label>
+                    <select class="form-select form-select-sm" id="childFilter" style="max-width: 200px;">
+                        <option value="all">All Children</option>
+                        {% for child in children %}
+                        <option value="{{ child.id }}">{{ child.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <div id="familyCalendar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Calendar Guide</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">Event Types:</h6>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="calendar-color-sample bg-success me-2"></div>
+                        <span>Chore Completions</span>
+                    </div>
+                    <p class="text-muted small">Shows completed chores and earnings</p>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="calendar-color-sample bg-info me-2"></div>
+                        <span>Positive Behavior</span>
+                    </div>
+                    <p class="text-muted small">Indicates rewards for good behavior</p>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="calendar-color-sample bg-danger me-2"></div>
+                        <span>Negative Behavior</span>
+                    </div>
+                    <p class="text-muted small">Shows deductions for poor behavior</p>
+                </div>
+                
+                <hr>
+                
+                <h6 class="mb-3">Tips:</h6>
+                <ul class="small">
+                    <li>Click on any event to see details</li>
+                    <li>Use the filters to focus on specific children</li>
+                    <li>Switch between month, week, and list views</li>
+                    {% if is_parent %}
+                    <li>Add events retroactively if needed</li>
+                    {% endif %}
+                </ul>
+                
+                <img src="https://pixabay.com/get/gadc53ee0f8bc7febb2ae27e4199778c42a1e7329e6fc48c0b21e380e67504b3002a34b1b087044fe2057f6cc252ea303631b0440ec43ea6c2b2c43f39daf279c_1280.jpg" 
+                     alt="Responsibility chart" 
+                     class="img-fluid rounded mt-3"
+                     style="max-height: 150px; width: 100%; object-fit: cover;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Event Details Modal -->
+<div class="modal fade" id="eventDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Event Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_parent %}
+<!-- Add Chore Completion Modal -->
+<div class="modal fade" id="addChoreCompletionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Chore Completion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('complete_chore', chore_id='placeholder') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="calendarChoreId" class="form-label">Chore</label>
+                        <select class="form-select" id="calendarChoreId" name="chore_id" required>
+                            {% for chore_id, chore in data['chores'].items() %}
+                                {% if chore['family_id'] == family['id'] and chore['status'] == 'active' %}
+                                <option value="{{ chore_id }}" data-time="{{ chore['estimated_time_minutes'] }}" data-child="{{ chore['assigned_to'] or '' }}">
+                                    {{ chore['name'] }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="calendarChildId" class="form-label">Child</label>
+                        <select class="form-select" id="calendarChildId" name="child_id" required>
+                            {% for child in children %}
+                            <option value="{{ child.id }}">{{ child.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="calendarTimeSpent" class="form-label">Time Spent (minutes)</label>
+                        <input type="number" class="form-control" id="calendarTimeSpent" name="time_spent" min="1" value="15" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="calendarCompletionDate" class="form-label">Date Completed</label>
+                        <input type="date" class="form-control" id="calendarCompletionDate" name="completion_date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Completion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Behavior Modal -->
+<div class="modal fade" id="addBehaviorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Behavior Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_behavior') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Behavior Type</label>
+                        <div class="d-flex">
+                            <div class="form-check me-4">
+                                <input class="form-check-input" type="radio" name="behavior_type" id="calendarBehaviorPositive" value="positive" checked>
+                                <label class="form-check-label" for="calendarBehaviorPositive">
+                                    <span class="text-success">Positive (Award)</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="behavior_type" id="calendarBehaviorNegative" value="negative">
+                                <label class="form-check-label" for="calendarBehaviorNegative">
+                                    <span class="text-danger">Negative (Deduction)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="calendarUserId" class="form-label">Child</label>
+                        <select class="form-select" id="calendarUserId" name="user_id" required>
+                            {% for child in children %}
+                            <option value="{{ child.id }}">{{ child.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="calendarDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="calendarDescription" name="description" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="calendarAmount" class="form-label">Amount ($)</label>
+                        <input type="number" class="form-control" id="calendarAmount" name="amount" min="0.01" step="0.01" value="1.00" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="calendarDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="calendarDate" name="date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .calendar-color-sample {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+    }
+    #familyCalendar {
+        background-color: var(--bs-dark);
+    }
+    .fc-theme-standard .fc-list, .fc-theme-standard .fc-scrollgrid {
+        border-color: var(--bs-gray-800);
+    }
+    .fc-theme-standard td, .fc-theme-standard th {
+        border-color: var(--bs-gray-700);
+    }
+    .fc .fc-daygrid-day.fc-day-today {
+        background-color: var(--bs-gray-600);
+    }
+    .fc-theme-standard .fc-list-day-cushion {
+        background-color: var(--bs-gray-700);
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+<script>
+    // Auto-populate child dropdown based on chore selection
+    document.addEventListener('DOMContentLoaded', function() {
+        const choreSelect = document.getElementById('calendarChoreId');
+        const childSelect = document.getElementById('calendarChildId');
+        const timeInput = document.getElementById('calendarTimeSpent');
+        
+        if (choreSelect && childSelect && timeInput) {
+            choreSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const assignedChildId = selectedOption.dataset.child;
+                const estimatedTime = selectedOption.dataset.time;
+                
+                if (assignedChildId && childSelect) {
+                    for (let i = 0; i < childSelect.options.length; i++) {
+                        if (childSelect.options[i].value === assignedChildId) {
+                            childSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                
+                if (estimatedTime && timeInput) {
+                    timeInput.value = estimatedTime;
+                }
+            });
+            
+            // Trigger the change event to set initial values
+            choreSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Set default dates for the calendar modals
+        const dateInputs = document.querySelectorAll('#calendarCompletionDate, #calendarDate');
+        dateInputs.forEach(input => {
+            if (input) {
+                const today = new Date().toISOString().split('T')[0];
+                input.value = today;
+            }
+        });
+    });
+</script>
+{% endblock %}

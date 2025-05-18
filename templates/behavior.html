@@ -1,0 +1,431 @@
+{% extends "layout.html" %}
+
+{% block title %}Behavior{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">
+            <i class="fas fa-star me-2"></i>Behavior
+        </h1>
+        <p class="text-muted">
+            Track positive and negative behavior impacts
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Behavior Records</h5>
+                {% if is_parent %}
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBehaviorModal">
+                    <i class="fas fa-plus me-1"></i>Add Record
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if is_parent %}
+                <div class="p-3 bg-dark border-bottom">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label for="behaviorTypeFilter" class="form-label small mb-0">Filter by Type</label>
+                            <select class="form-select form-select-sm" id="behaviorTypeFilter">
+                                <option value="all">All Types</option>
+                                <option value="positive">Positive</option>
+                                <option value="negative">Negative</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="behaviorChildFilter" class="form-label small mb-0">Filter by Child</label>
+                            <select class="form-select form-select-sm" id="behaviorChildFilter">
+                                <option value="all">All Children</option>
+                                {% for child in children %}
+                                <option value="{{ child.id }}">{{ child.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="behaviorDateStart" class="form-label small mb-0">Date Range</label>
+                            <div class="d-flex">
+                                <input type="date" class="form-control form-control-sm me-1" id="behaviorDateStart">
+                                <input type="date" class="form-control form-control-sm" id="behaviorDateEnd">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Child</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                {% if is_parent %}
+                                <th class="text-end">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if behavior_records %}
+                                {% for record in behavior_records %}
+                                <tr class="behavior-row" 
+                                    data-is-positive="{{ record.is_positive }}"
+                                    data-child-id="{{ record.child_id }}"
+                                    data-date="{{ record.date }}">
+                                    <td>
+                                        <div class="behavior-type-indicator" data-is-positive="{{ record.is_positive }}"></div>
+                                    </td>
+                                    <td>{{ record.description }}</td>
+                                    <td>{{ record.child_name }}</td>
+                                    <td>{{ record.date }}</td>
+                                    <td>
+                                        <span class="{{ 'text-success' if record.is_positive else 'text-danger' }}">
+                                            {{ '+' if record.is_positive else '-' }}${{ "%.2f"|format(record.amount) }}
+                                        </span>
+                                    </td>
+                                    {% if is_parent %}
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-info btn-edit-behavior"
+                                                    data-record-id="{{ record.id }}"
+                                                    data-description="{{ record.description }}"
+                                                    data-amount="{{ record.amount }}"
+                                                    data-is-positive="{{ record.is_positive }}"
+                                                    data-date="{{ record.date }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-danger btn-delete-behavior"
+                                                    data-record-id="{{ record.id }}"
+                                                    data-description="{{ record.description }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="{% if is_parent %}6{% else %}5{% endif %}" class="text-center py-4">
+                                        <p class="text-muted mb-0">No behavior records available</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Behavior Management</h5>
+            </div>
+            <div class="card-body">
+                <img src="https://pixabay.com/get/ge1359bca2affd5b00c8d9950faebcdca42d6a8ff2f77c6f5ffcecc9180b823e411b4acb71954672a55c9144f0c54334d4b6a03c1983e6f7eb9dbc52d4e25d80e_1280.jpg" 
+                     alt="Children helping at home" 
+                     class="img-fluid rounded mb-3"
+                     style="max-height: 200px; width: 100%; object-fit: cover;">
+                
+                <h6 class="mb-3">How Behavior Management Works:</h6>
+                <p>Reward positive behaviors and discourage negative ones with financial incentives.</p>
+                
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="card bg-success bg-opacity-25 h-100">
+                            <div class="card-body p-3">
+                                <h6 class="text-success mb-2">Positive Behaviors</h6>
+                                <ul class="small mb-0">
+                                    <li>Helping siblings</li>
+                                    <li>Extra chores</li>
+                                    <li>Good grades</li>
+                                    <li>Kind actions</li>
+                                    <li>Taking initiative</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-danger bg-opacity-25 h-100">
+                            <div class="card-body p-3">
+                                <h6 class="text-danger mb-2">Negative Behaviors</h6>
+                                <ul class="small mb-0">
+                                    <li>Missed chores</li>
+                                    <li>Fighting/arguing</li>
+                                    <li>Breaking rules</li>
+                                    <li>Disrespect</li>
+                                    <li>Not listening</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if is_parent %}
+                <h6 class="mb-2">Quick Actions:</h6>
+                <div class="row">
+                    {% for child in children %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-dark">
+                            <div class="card-body py-2">
+                                <h6 class="mb-2">{{ child.name }}</h6>
+                                <div class="d-flex">
+                                    <button class="btn btn-sm btn-success me-2 btn-quick-behavior" 
+                                            data-behavior-type="positive" 
+                                            data-child-id="{{ child.id }}" 
+                                            data-child-name="{{ child.name }}">
+                                        <i class="fas fa-plus-circle me-1"></i>Award
+                                    </button>
+                                    <button class="btn btn-sm btn-danger btn-quick-behavior" 
+                                            data-behavior-type="negative" 
+                                            data-child-id="{{ child.id }}" 
+                                            data-child-name="{{ child.name }}">
+                                        <i class="fas fa-minus-circle me-1"></i>Deduct
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="alert alert-info mt-2">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> Be consistent with rewards and consequences to make them effective.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if is_parent %}
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Summary</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for child in children %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">{{ child.name }}</h6>
+                                <p class="mb-0 small text-muted">Behavior Impact</p>
+                            </div>
+                            
+                            {% set positive_total = 0 %}
+                            {% set negative_total = 0 %}
+                            {% for record in behavior_records %}
+                                {% if record.child_id == child.id %}
+                                    {% if record.is_positive %}
+                                        {% set positive_total = positive_total + record.amount %}
+                                    {% else %}
+                                        {% set negative_total = negative_total + record.amount %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% set net_total = positive_total - negative_total %}
+                            
+                            <div>
+                                <span class="badge bg-success">+${{ "%.2f"|format(positive_total) }}</span>
+                                <span class="badge bg-danger">-${{ "%.2f"|format(negative_total) }}</span>
+                                <div class="text-center">
+                                    <span class="{{ 'text-success' if net_total >= 0 else 'text-danger' }}">
+                                        Net: {{ '+' if net_total >= 0 else '' }}${{ "%.2f"|format(net_total) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_parent %}
+<!-- Add Behavior Modal -->
+<div class="modal fade" id="addBehaviorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Behavior Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_behavior') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Behavior Type</label>
+                        <div class="d-flex">
+                            <div class="form-check me-4">
+                                <input class="form-check-input" type="radio" name="behavior_type" id="behaviorPositive" value="positive" checked>
+                                <label class="form-check-label" for="behaviorPositive">
+                                    <span class="text-success">Positive (Award)</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="behavior_type" id="behaviorNegative" value="negative">
+                                <label class="form-check-label" for="behaviorNegative">
+                                    <span class="text-danger">Negative (Deduction)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">Child</label>
+                        <select class="form-select" id="user_id" name="user_id" required>
+                            {% for child in children %}
+                            <option value="{{ child.id }}">{{ child.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="description" name="description" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount ($)</label>
+                        <input type="number" class="form-control" id="amount" name="amount" min="0.01" step="0.01" value="1.00" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Behavior Modal -->
+<div class="modal fade" id="editBehaviorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Behavior Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('edit_behavior', record_id='placeholder') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Behavior Type</label>
+                        <div class="d-flex">
+                            <div class="form-check me-4">
+                                <input class="form-check-input" type="radio" name="behavior_type" id="editBehaviorPositive" value="positive">
+                                <label class="form-check-label" for="editBehaviorPositive">
+                                    <span class="text-success">Positive (Award)</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="behavior_type" id="editBehaviorNegative" value="negative">
+                                <label class="form-check-label" for="editBehaviorNegative">
+                                    <span class="text-danger">Negative (Deduction)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editBehaviorDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="editBehaviorDescription" name="description" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editBehaviorAmount" class="form-label">Amount ($)</label>
+                        <input type="number" class="form-control" id="editBehaviorAmount" name="amount" min="0.01" step="0.01" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editBehaviorDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editBehaviorDate" name="date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Behavior Modal -->
+<div class="modal fade" id="deleteBehaviorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Behavior Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the behavior record for <strong id="deleteBehaviorDescriptionPlaceholder"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <form action="{{ url_for('delete_behavior', record_id='placeholder') }}" method="post">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Behavior Modal -->
+<div class="modal fade" id="quickBehaviorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickBehaviorTitle">Quick Award</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_behavior') }}" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="behavior_type" id="quickBehaviorType" value="positive">
+                    <input type="hidden" name="user_id" id="quickBehaviorChildId" value="">
+                    
+                    <p>Adding for <strong id="quickBehaviorChildName"></strong>:</p>
+                    
+                    <div class="mb-3">
+                        <label for="quickDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="quickDescription" name="description" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quickAmount" class="form-label">Amount ($)</label>
+                        <input type="number" class="form-control" id="quickAmount" name="amount" min="0.01" step="0.01" value="1.00" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/behavior.js') }}"></script>
+{% endblock %}

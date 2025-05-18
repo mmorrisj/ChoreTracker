@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <h2 class="card-title"><i class="fas fa-home me-2"></i>Family Chore Tracker</h2>
+                    <p class="card-text text-muted">Track chores, earn rewards, achieve goals</p>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <div class="text-center">
+                            <img src="https://pixabay.com/get/g23afb1629bc4905fa2f5585bf46da68b4755ba3f5afb8de9e989896af312399f9c0ab880936547b59557fb732698a12f1a789af2177b12659be2d519a0f03466_1280.jpg" 
+                                 alt="Family doing chores together" 
+                                 class="img-fluid rounded mb-3"
+                                 style="max-height: 150px; object-fit: cover;">
+                            <p class="text-muted small">Earn money based on time spent on chores</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <img src="https://pixabay.com/get/g52230c505419c918ae2b33fd70e16976143238382efe1fcc6c45b0e0df0b9b9d005c3bbee1cfc495d0d7ba5d275a334e12838f5924eccc36c5573a1b6786f437_1280.jpg" 
+                                 alt="Children helping at home" 
+                                 class="img-fluid rounded mb-3"
+                                 style="max-height: 150px; object-fit: cover;">
+                            <p class="text-muted small">Track goals and celebrate achievements</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-muted small">Demo Accounts:</p>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="card bg-dark mb-2">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="mb-0">Parent</h6>
+                                    <p class="small mb-0">Username: parent<br>Password: password</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card bg-dark mb-2">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="mb-0">Child 1</h6>
+                                    <p class="small mb-0">Username: emma<br>Password: password</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="card bg-dark mb-2">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="mb-0">Child 2</h6>
+                                    <p class="small mb-0">Username: noah<br>Password: password</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">About Family Chore Tracker</h5>
+                <p>Teach your children responsibility and money management through chores and goals:</p>
+                <ul>
+                    <li>Children earn money based on time spent on chores ($10/hr default)</li>
+                    <li>Set individual goals for each child</li>
+                    <li>Create family goals that everyone contributes to</li>
+                    <li>Award bonuses for positive behavior</li>
+                    <li>Track progress and celebrate achievements</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
