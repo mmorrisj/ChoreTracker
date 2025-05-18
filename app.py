@@ -189,7 +189,12 @@ load_data()
 # Make data available to all templates
 @app.context_processor
 def inject_data():
-    return {'data': data}
+    import datetime
+    return {
+        'data': data,
+        'now': datetime.datetime.now,
+        'today': datetime.date.today
+    }
 
 # Helper function to calculate earnings
 def calculate_child_earnings(child_id):
