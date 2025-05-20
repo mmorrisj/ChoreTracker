@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the modal
             const modal = document.getElementById('editBehaviorModal');
             if (modal) {
-                const form = modal.querySelector('form');
+                const form = modal.querySelector('#editBehaviorForm');
                 form.action = `/behavior/${recordId}/edit`;
                 
                 const descriptionInput = modal.querySelector('#editBehaviorDescription');
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('deleteBehaviorModal');
             if (modal) {
                 const descriptionElement = modal.querySelector('#deleteBehaviorDescriptionPlaceholder');
-                const form = modal.querySelector('form');
+                const form = modal.querySelector('#deleteBehaviorForm');
                 
                 if (descriptionElement) descriptionElement.textContent = description;
                 if (form) form.action = `/behavior/${recordId}/delete`;
