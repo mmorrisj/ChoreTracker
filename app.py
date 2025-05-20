@@ -322,15 +322,31 @@ def dashboard():
                 user_id=child.id
             ).all()
             
+            # Calculate child's total earnings once
+            total_child_earnings = calculate_child_earnings(child.id)
+            
+            # Store goals with their progress
+            child_goals_data = []
             for goal in child_goals:
-                goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
-                child_data["goals"].append({
+                # Use total earnings to calculate progress
+                goal_progress = (total_child_earnings / goal.amount) * 100 if goal.amount > 0 else 0
+                # Cap progress at 100%
+                capped_progress = min(goal_progress, 100)
+                
+                child_goals_data.append({
                     "id": goal.id,
                     "name": goal.name,
-                    "progress": goal_progress,
-                    "current_amount": goal.current_amount,
-                    "amount": goal.amount
+                    "progress": capped_progress,
+                    "current_amount": total_child_earnings,
+                    "amount": goal.amount,
+                    "proportion": f"{(goal.amount / total_child_earnings * 100):.1f}%" if total_child_earnings > 0 else "N/A"
                 })
+            
+            # Sort goals by progress in descending order (highest completion first)
+            child_goals_data.sort(key=lambda x: x["progress"], reverse=True)
+            
+            # Store sorted goals in child data
+            child_data["goals"] = child_goals_data
             
             children.append(child_data)
     
