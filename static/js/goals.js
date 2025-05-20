@@ -68,8 +68,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the modal
             const modal = document.getElementById('editGoalModal');
             if (modal) {
-                const form = modal.querySelector('form');
-                form.action = `/goals/${goalId}/edit`;
+                const form = modal.querySelector('#editGoalForm');
+                if (form) {
+                    // Update form action with the actual goal ID
+                    const baseUrl = form.action.split('/goals/')[0];
+                    form.action = `${baseUrl}/goals/${goalId}/edit`;
+                }
                 
                 const nameInput = modal.querySelector('#editGoalName');
                 const descriptionInput = modal.querySelector('#editGoalDescription');
@@ -99,10 +103,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('deleteGoalModal');
             if (modal) {
                 const goalNameElement = modal.querySelector('#deleteGoalNamePlaceholder');
-                const form = modal.querySelector('form');
+                const form = modal.querySelector('#deleteGoalForm');
                 
                 if (goalNameElement) goalNameElement.textContent = goalName;
-                if (form) form.action = `/goals/${goalId}/delete`;
+                if (form) {
+                    // Update form action with the actual goal ID
+                    const baseUrl = form.action.split('/goals/')[0];
+                    form.action = `${baseUrl}/goals/${goalId}/delete`;
+                }
                 
                 // Show the modal
                 const bsModal = new bootstrap.Modal(modal);
@@ -123,11 +131,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('contributeGoalModal');
             if (modal) {
                 const goalNameElement = modal.querySelector('#contributeGoalNamePlaceholder');
-                const form = modal.querySelector('form');
+                const form = modal.querySelector('#contributeGoalForm');
                 const amountInput = modal.querySelector('#contributeAmount');
                 
                 if (goalNameElement) goalNameElement.textContent = goalName;
-                if (form) form.action = `/goals/${goalId}/contribute`;
+                if (form) {
+                    // Update form action with the actual goal ID
+                    const baseUrl = form.action.split('/goals/')[0];
+                    form.action = `${baseUrl}/goals/${goalId}/contribute`;
+                }
                 if (amountInput) {
                     amountInput.setAttribute('max', remainingAmount);
                     amountInput.value = Math.min(5, remainingAmount).toFixed(2);
