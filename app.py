@@ -611,57 +611,72 @@ def complete_chore(chore_id):
 @app.route("/goals")
 @login_required
 def goals():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
-    is_parent = user["role"] == "parent"
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
     
     # Get individual goals
     individual_goals = []
-    for goal_id, goal in data["goals"].items():
-        if goal["family_id"] == family["id"] and not goal["is_family_goal"]:
-            user_data = data["users"].get(goal["user_id"])
-            if user_data:
-                goal_data = {
-                    "id": goal["id"],
-                    "name": goal["name"],
-                    "description": goal["description"],
-                    "amount": goal["amount"],
-                    "current_amount": goal["current_amount"],
-                    "user_name": user_data["username"],
-                    "user_id": user_data["id"],
-                    "progress": (goal["current_amount"] / goal["amount"]) * 100
-                }
+    individual_goal_records = Goal.query.filter_by(
+        family_id=family.id, 
+        is_family_goal=False
+    ).all()
+    
+    for goal in individual_goal_records:
+        goal_owner = User.query.get(goal.user_id)
+        if goal_owner:
+            # Calculate progress percentage
+            goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+            
+            # For children, only show their own goals
+            if not is_parent and goal.user_id != user.id:
+                continue
                 
-                # For children, only show their own goals
-                if not is_parent and goal["user_id"] != user["id"]:
-                    continue
-                    
-                individual_goals.append(goal_data)
+            goal_data = {
+                "id": goal.id,
+                "name": goal.name,
+                "description": goal.description,
+                "amount": goal.amount,
+                "current_amount": goal.current_amount,
+                "user_name": goal_owner.username,
+                "user_id": goal_owner.id,
+                "progress": goal_progress
+            }
+            
+            individual_goals.append(goal_data)
     
     # Get family goals
     family_goals = []
-    for goal_id, goal in data["goals"].items():
-        if goal["family_id"] == family["id"] and goal["is_family_goal"]:
-            goal_data = {
-                "id": goal["id"],
-                "name": goal["name"],
-                "description": goal["description"],
-                "amount": goal["amount"],
-                "current_amount": goal["current_amount"],
-                "progress": (goal["current_amount"] / goal["amount"]) * 100
-            }
-            family_goals.append(goal_data)
+    family_goal_records = Goal.query.filter_by(
+        family_id=family.id,
+        is_family_goal=True
+    ).all()
+    
+    for goal in family_goal_records:
+        goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+        goal_data = {
+            "id": goal.id,
+            "name": goal.name,
+            "description": goal.description,
+            "amount": goal.amount,
+            "current_amount": goal.current_amount,
+            "progress": goal_progress
+        }
+        family_goals.append(goal_data)
     
     # If parent, get list of children for goal creation
     children = []
     if is_parent:
-        for child_id in family["child_ids"]:
-            child = data["users"].get(child_id)
-            if child:
-                children.append({
-                    "id": child["id"],
-                    "name": child["username"]
-                })
+        family_children = User.query.filter_by(
+            family_id=family.id,
+            role="child"
+        ).all()
+        
+        for child in family_children:
+            children.append({
+                "id": child.id,
+                "name": child.username
+            })
     
     return render_template(
         "goals.html",
@@ -676,8 +691,8 @@ def goals():
 @app.route("/goals/add", methods=["POST"])
 @parent_required
 def add_goal():
-    user = data["users"].get(session["user_id"])
-    family_id = user["family_id"]
+    user = current_user
+    family_id = user.family_id
     
     name = request.form.get("name")
     description = request.form.get("description", "")
