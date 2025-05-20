@@ -505,6 +505,36 @@
 
 {% endblock %}
 
+<!-- Apply Reward Modal -->
+<div class="modal fade" id="applyRewardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Apply Reward</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('apply_reward', goal_id=0) }}" method="post" id="applyRewardForm">
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-gift fa-3x text-success mb-3"></i>
+                        <h4>Goal Achieved! 🎉</h4>
+                    </div>
+                    <p>You're about to apply the reward for <strong id="applyRewardGoalNamePlaceholder"></strong>.</p>
+                    <p>This will deduct <strong id="applyRewardAmountPlaceholder"></strong> from the child's total earnings.</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This action represents purchasing the reward item or delivering the promised reward.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Apply Reward</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/goals.js') }}"></script>
 {% endblock %}

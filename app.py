@@ -625,8 +625,13 @@ def goals():
     for goal in individual_goal_records:
         goal_owner = User.query.get(goal.user_id)
         if goal_owner:
-            # Calculate progress percentage
-            goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+            # Get the child's total earnings
+            total_child_earnings = calculate_child_earnings(goal_owner.id)
+            
+            # For individual goals, we'll show proportion of total earnings
+            # We're using the total child's earnings as the current_amount instead
+            # of the specific goal's current_amount
+            goal_progress = (total_child_earnings / goal.amount) * 100 if goal.amount > 0 else 0
             
             # For children, only show their own goals
             if not is_parent and goal.user_id != user.id:
@@ -637,10 +642,12 @@ def goals():
                 "name": goal.name,
                 "description": goal.description,
                 "amount": goal.amount,
-                "current_amount": goal.current_amount,
+                "current_amount": total_child_earnings, # Use total earnings instead of goal-specific amount
                 "user_name": goal_owner.username,
                 "user_id": goal_owner.id,
-                "progress": goal_progress
+                "progress": min(goal_progress, 100),  # Cap at 100%
+                "total_earnings": total_child_earnings,
+                "proportion": f"{(goal.amount / total_child_earnings * 100):.1f}%" if total_child_earnings > 0 else "N/A"
             }
             
             individual_goals.append(goal_data)
