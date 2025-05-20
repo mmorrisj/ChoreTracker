@@ -760,44 +760,43 @@ def contribute_to_goal(goal_id):
 @app.route("/behavior")
 @login_required
 def behavior():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
-    is_parent = user["role"] == "parent"
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
     
-    # Get behavior records
+    # Get behavior records from database
+    if is_parent:
+        # Parents can see all family behavior records
+        records_query = BehaviorRecord.query.filter_by(family_id=family.id).order_by(BehaviorRecord.date.desc())
+    else:
+        # Children can only see their own records
+        records_query = BehaviorRecord.query.filter_by(family_id=family.id, user_id=user.id).order_by(BehaviorRecord.date.desc())
+    
+    # Build behavior records with user information
     behavior_records = []
-    for record_id, record in data["behavior_records"].items():
-        if record["family_id"] == family["id"]:
-            child = data["users"].get(record["user_id"])
-            if child:
-                # For children, only show their own records
-                if not is_parent and record["user_id"] != user["id"]:
-                    continue
-                    
-                record_data = {
-                    "id": record["id"],
-                    "description": record["description"],
-                    "amount": record["amount"],
-                    "is_positive": record["is_positive"],
-                    "date": record["date"],
-                    "child_name": child["username"],
-                    "child_id": child["id"]
-                }
-                behavior_records.append(record_data)
-    
-    # Sort records by date (most recent first)
-    behavior_records.sort(key=lambda x: x["date"], reverse=True)
+    for record in records_query:
+        child = User.query.get(record.user_id)
+        if child:
+            record_data = {
+                "id": record.id,
+                "description": record.description,
+                "amount": record.amount,
+                "is_positive": record.is_positive,
+                "date": record.date,
+                "child_name": child.username,
+                "child_id": child.id
+            }
+            behavior_records.append(record_data)
     
     # If parent, get list of children for behavior record creation
     children = []
     if is_parent:
-        for child_id in family["child_ids"]:
-            child = data["users"].get(child_id)
-            if child:
-                children.append({
-                    "id": child["id"],
-                    "name": child["username"]
-                })
+        children_query = User.query.filter_by(family_id=family.id, role="child")
+        for child in children_query:
+            children.append({
+                "id": child.id,
+                "name": child.username
+            })
     
     return render_template(
         "behavior.html",
@@ -811,14 +810,14 @@ def behavior():
 @app.route("/behavior/add", methods=["POST"])
 @parent_required
 def add_behavior():
-    user = data["users"].get(session["user_id"])
-    family_id = user["family_id"]
+    user = current_user
+    family_id = user.family_id
     
     description = request.form.get("description")
     amount = request.form.get("amount", 0, type=float)
     behavior_type = request.form.get("behavior_type")
     user_id = request.form.get("user_id")
-    date = request.form.get("date", datetime.datetime.now().strftime("%Y-%m-%d"))
+    date_str = request.form.get("date", datetime.datetime.now().strftime("%Y-%m-%d"))
     
     if not description:
         flash("Behavior description is required", "danger")
@@ -832,53 +831,81 @@ def add_behavior():
         flash("Child must be selected", "danger")
         return redirect(url_for("behavior"))
     
-    # Generate a unique ID
-    record_id = f"behavior{len(data['behavior_records']) + 1}"
+    # Convert the date string to a Python date object
+    try:
+        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        date_obj = datetime.date.today()
     
-    # Create the new behavior record
-    data["behavior_records"][record_id] = {
-        "id": record_id,
-        "family_id": family_id,
-        "user_id": user_id,
-        "date": date,
-        "description": description,
-        "amount": amount,
-        "is_positive": behavior_type == "positive"
-    }
-    
-    child = data["users"].get(user_id)
-    action = "awarded to" if behavior_type == "positive" else "deducted from"
-    flash(f"${amount:.2f} {action} {child['username']} for {description}", "success")
-    save_data()
-    return redirect(url_for("behavior"))
-
-@app.route("/behavior/<record_id>/edit", methods=["POST"])
-@parent_required
-def edit_behavior(record_id):
-    record = data["behavior_records"].get(record_id)
-    if not record:
-        flash("Behavior record not found", "danger")
+    # Create new behavior record in the database
+    child = User.query.get(user_id)
+    if not child:
+        flash("Selected child not found", "danger")
         return redirect(url_for("behavior"))
     
-    record["description"] = request.form.get("description", record["description"])
-    record["amount"] = request.form.get("amount", record["amount"], type=float)
-    record["date"] = request.form.get("date", record["date"])
-    record["is_positive"] = request.form.get("behavior_type") == "positive"
+    new_record = BehaviorRecord(
+        family_id=family_id,
+        user_id=int(user_id),
+        date=date_obj,
+        description=description,
+        amount=amount,
+        is_positive=(behavior_type == "positive")
+    )
     
-    flash("Behavior record updated successfully", "success")
-    save_data()
+    db.session.add(new_record)
+    db.session.commit()
+    
+    action = "awarded to" if behavior_type == "positive" else "deducted from"
+    flash(f"${amount:.2f} {action} {child.username} for {description}", "success")
     return redirect(url_for("behavior"))
 
-@app.route("/behavior/<record_id>/delete", methods=["POST"])
+@app.route("/behavior/<int:record_id>/edit", methods=["POST"])
+@parent_required
+def edit_behavior(record_id):
+    record = BehaviorRecord.query.get_or_404(record_id)
+    
+    # Ensure the record belongs to the current user's family
+    if record.family_id != current_user.family_id:
+        flash("You don't have permission to edit this record", "danger")
+        return redirect(url_for("behavior"))
+    
+    description = request.form.get("description")
+    amount = request.form.get("amount", 0, type=float)
+    date_str = request.form.get("date")
+    behavior_type = request.form.get("behavior_type")
+    
+    if description:
+        record.description = description
+    
+    if amount > 0:
+        record.amount = amount
+    
+    if date_str:
+        try:
+            record.date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            # If date format is invalid, keep the current date
+            pass
+    
+    record.is_positive = (behavior_type == "positive")
+    
+    db.session.commit()
+    flash("Behavior record updated successfully", "success")
+    return redirect(url_for("behavior"))
+
+@app.route("/behavior/<int:record_id>/delete", methods=["POST"])
 @parent_required
 def delete_behavior(record_id):
-    if record_id in data["behavior_records"]:
-        del data["behavior_records"][record_id]
-        flash("Behavior record deleted successfully", "success")
-        save_data()
-    else:
-        flash("Behavior record not found", "danger")
+    record = BehaviorRecord.query.get_or_404(record_id)
     
+    # Ensure the record belongs to the current user's family
+    if record.family_id != current_user.family_id:
+        flash("You don't have permission to delete this record", "danger")
+        return redirect(url_for("behavior"))
+    
+    db.session.delete(record)
+    db.session.commit()
+    flash("Behavior record deleted successfully", "success")
     return redirect(url_for("behavior"))
 
 @app.route("/calendar")
