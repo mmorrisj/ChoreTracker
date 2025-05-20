@@ -525,73 +525,87 @@ def edit_chore(chore_id):
         flash("You don't have permission to edit this chore", "danger")
         return redirect(url_for("chores"))
     
-    chore["name"] = request.form.get("name", chore["name"])
-    chore["description"] = request.form.get("description", chore["description"])
-    chore["estimated_time_minutes"] = request.form.get("estimated_time", chore["estimated_time_minutes"], type=int)
-    chore["assigned_to"] = request.form.get("assigned_to", chore["assigned_to"])
-    chore["frequency"] = request.form.get("frequency", chore["frequency"])
-    chore["status"] = request.form.get("status", chore["status"])
+    chore.name = request.form.get("name", chore.name)
+    chore.description = request.form.get("description", chore.description)
+    chore.estimated_time_minutes = request.form.get("estimated_time", chore.estimated_time_minutes, type=int)
+    chore.assigned_to = request.form.get("assigned_to") or None
+    chore.frequency = request.form.get("frequency", chore.frequency)
+    chore.status = request.form.get("status", chore.status)
     
+    db.session.commit()
     flash("Chore updated successfully", "success")
-    save_data()
     return redirect(url_for("chores"))
 
-@app.route("/chores/<chore_id>/delete", methods=["POST"])
+@app.route("/chores/<int:chore_id>/delete", methods=["POST"])
 @parent_required
 def delete_chore(chore_id):
-    if chore_id in data["chores"]:
-        del data["chores"][chore_id]
-        flash("Chore deleted successfully", "success")
-        save_data()
-    else:
-        flash("Chore not found", "danger")
+    chore = Chore.query.get_or_404(chore_id)
+    if chore.family_id != current_user.family_id:
+        flash("You don't have permission to delete this chore", "danger")
+        return redirect(url_for("chores"))
     
+    # Delete any completions for this chore
+    ChoreCompletion.query.filter_by(chore_id=chore_id).delete()
+    
+    # Delete the chore
+    db.session.delete(chore)
+    db.session.commit()
+    
+    flash("Chore deleted successfully", "success")
     return redirect(url_for("chores"))
 
-@app.route("/chores/<chore_id>/complete", methods=["POST"])
+@app.route("/chores/<int:chore_id>/complete", methods=["POST"])
 @login_required
 def complete_chore(chore_id):
-    user = data["users"].get(session["user_id"])
-    chore = data["chores"].get(chore_id)
+    user = current_user
+    chore = Chore.query.get_or_404(chore_id)
     
-    if not chore:
-        flash("Chore not found", "danger")
+    if chore.family_id != user.family_id:
+        flash("You don't have permission to complete this chore", "danger")
         return redirect(url_for("dashboard"))
     
     # Check if the user is allowed to complete this chore
-    is_parent = user["role"] == "parent"
-    is_assigned = chore["assigned_to"] == user["id"]
+    is_parent = user.role == "parent"
+    is_assigned = chore.assigned_to == user.id
     
     if not (is_parent or is_assigned):
         flash("You are not authorized to complete this chore", "danger")
         return redirect(url_for("dashboard"))
     
     # Get completion details
-    time_spent = request.form.get("time_spent", chore["estimated_time_minutes"], type=int)
-    completion_date = request.form.get("completion_date", datetime.datetime.now().strftime("%Y-%m-%d"))
-    child_id = request.form.get("child_id", user["id"] if not is_parent else chore["assigned_to"])
+    time_spent = request.form.get("time_spent", chore.estimated_time_minutes, type=int)
+    completion_date = request.form.get("completion_date")
+    if completion_date:
+        try:
+            completion_date = datetime.datetime.strptime(completion_date, "%Y-%m-%d").date()
+        except ValueError:
+            completion_date = datetime.date.today()
+    else:
+        completion_date = datetime.date.today()
+        
+    child_id = request.form.get("child_id")
+    if not child_id:
+        child_id = user.id if not is_parent else chore.assigned_to
     
     # Calculate earnings based on the hourly rate
-    family = data["families"].get(user["family_id"])
-    hourly_rate = family.get("hourly_rate", DEFAULT_HOURLY_RATE)
-    amount_earned = (time_spent / 60) * hourly_rate
+    family = user.family
+    hourly_rate = family.hourly_rate
+    amount_earned = round((time_spent / 60) * hourly_rate, 2)
     
-    # Generate a unique ID for the completion
-    completion_id = f"completion{len(data['chore_completions']) + 1}"
+    # Create new completion record
+    completion = ChoreCompletion(
+        chore_id=chore.id,
+        user_id=child_id,
+        date=completion_date,
+        time_spent_minutes=time_spent,
+        amount_earned=amount_earned,
+        status="completed"
+    )
     
-    # Record the completion
-    data["chore_completions"][completion_id] = {
-        "id": completion_id,
-        "chore_id": chore_id,
-        "user_id": child_id,
-        "date": completion_date,
-        "time_spent_minutes": time_spent,
-        "amount_earned": amount_earned,
-        "status": "completed"
-    }
+    db.session.add(completion)
+    db.session.commit()
     
     flash(f"Chore completed! Earned ${amount_earned:.2f}", "success")
-    save_data()
     return redirect(url_for("dashboard"))
 
 @app.route("/goals")
