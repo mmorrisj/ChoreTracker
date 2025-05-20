@@ -438,41 +438,42 @@ def dashboard():
 @app.route("/chores")
 @login_required
 def chores():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
-    is_parent = user["role"] == "parent"
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
     
+    # Get chores from database
     family_chores = []
-    for chore_id, chore in data["chores"].items():
-        if chore["family_id"] == family["id"]:
-            # Get the assigned child's name
-            assigned_to_name = "Unassigned"
-            if chore["assigned_to"]:
-                assigned_child = data["users"].get(chore["assigned_to"])
-                if assigned_child:
-                    assigned_to_name = assigned_child["username"]
-            
-            family_chores.append({
-                "id": chore["id"],
-                "name": chore["name"],
-                "description": chore["description"],
-                "estimated_time_minutes": chore["estimated_time_minutes"],
-                "assigned_to": chore["assigned_to"],
-                "assigned_to_name": assigned_to_name,
-                "frequency": chore["frequency"],
-                "status": chore["status"]
-            })
+    chores_query = Chore.query.filter_by(family_id=family.id).all()
+    
+    for chore in chores_query:
+        # Get the assigned child's name
+        assigned_to_name = "Unassigned"
+        if chore.assigned_to:
+            assigned_child = User.query.get(chore.assigned_to)
+            if assigned_child:
+                assigned_to_name = assigned_child.username
+        
+        family_chores.append({
+            "id": chore.id,
+            "name": chore.name,
+            "description": chore.description,
+            "estimated_time_minutes": chore.estimated_time_minutes,
+            "assigned_to": chore.assigned_to,
+            "assigned_to_name": assigned_to_name,
+            "frequency": chore.frequency,
+            "status": chore.status
+        })
     
     # If parent, get list of children for assignment dropdown
     children = []
     if is_parent:
-        for child_id in family["child_ids"]:
-            child = data["users"].get(child_id)
-            if child:
-                children.append({
-                    "id": child["id"],
-                    "name": child["username"]
-                })
+        children_query = User.query.filter_by(family_id=family.id, role="child").all()
+        for child in children_query:
+            children.append({
+                "id": child.id,
+                "name": child.username
+            })
     
     return render_template(
         "chores.html",
@@ -486,8 +487,8 @@ def chores():
 @app.route("/chores/add", methods=["POST"])
 @parent_required
 def add_chore():
-    user = data["users"].get(session["user_id"])
-    family_id = user["family_id"]
+    user = current_user
+    family_id = user.family_id
     
     name = request.form.get("name")
     description = request.form.get("description", "")
@@ -499,31 +500,29 @@ def add_chore():
         flash("Chore name is required", "danger")
         return redirect(url_for("chores"))
     
-    # Generate a unique ID
-    chore_id = f"chore{len(data['chores']) + 1}"
+    # Create the new chore in the database
+    new_chore = Chore(
+        family_id=family_id,
+        name=name,
+        description=description,
+        estimated_time_minutes=estimated_time,
+        assigned_to=assigned_to if assigned_to else None,
+        frequency=frequency,
+        status="active"
+    )
     
-    # Create the new chore
-    data["chores"][chore_id] = {
-        "id": chore_id,
-        "family_id": family_id,
-        "name": name,
-        "description": description,
-        "estimated_time_minutes": estimated_time,
-        "assigned_to": assigned_to if assigned_to else None,
-        "frequency": frequency,
-        "status": "active"
-    }
+    db.session.add(new_chore)
+    db.session.commit()
     
     flash(f"Chore '{name}' added successfully", "success")
-    save_data()
     return redirect(url_for("chores"))
 
-@app.route("/chores/<chore_id>/edit", methods=["POST"])
+@app.route("/chores/<int:chore_id>/edit", methods=["POST"])
 @parent_required
 def edit_chore(chore_id):
-    chore = data["chores"].get(chore_id)
-    if not chore:
-        flash("Chore not found", "danger")
+    chore = Chore.query.get_or_404(chore_id)
+    if chore.family_id != current_user.family_id:
+        flash("You don't have permission to edit this chore", "danger")
         return redirect(url_for("chores"))
     
     chore["name"] = request.form.get("name", chore["name"])
