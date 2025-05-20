@@ -813,6 +813,41 @@ def contribute_to_goal(goal_id):
     
     return redirect(url_for("goals"))
 
+@app.route("/goals/<int:goal_id>/apply-reward", methods=["POST"])
+@parent_required
+def apply_reward(goal_id):
+    goal = Goal.query.get_or_404(goal_id)
+    
+    # Check if the goal belongs to the user's family
+    if goal.family_id != current_user.family_id:
+        flash("You don't have permission to apply rewards for this goal", "danger")
+        return redirect(url_for("goals"))
+    
+    # Check if goal is complete
+    if goal.current_amount < goal.amount:
+        flash("This goal hasn't been fully funded yet", "warning")
+        return redirect(url_for("goals"))
+    
+    # Create a negative behavior record to deduct the amount
+    # This effectively "spends" the money that was saved for the goal
+    deduction = BehaviorRecord(
+        family_id=current_user.family_id,
+        user_id=goal.user_id,
+        date=datetime.date.today(),
+        description=f"Reward applied: {goal.name}",
+        amount=goal.amount,
+        is_positive=False
+    )
+    
+    db.session.add(deduction)
+    
+    # Reset the goal amount to 0
+    goal.current_amount = 0
+    
+    db.session.commit()
+    flash(f"Reward for '{goal.name}' has been applied! ${goal.amount:.2f} has been deducted from the child's earnings.", "success")
+    return redirect(url_for("goals"))
+
 @app.route("/behavior")
 @login_required
 def behavior():

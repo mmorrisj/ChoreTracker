@@ -119,6 +119,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Handle Apply Reward buttons
+    const applyRewardButtons = document.querySelectorAll('.btn-apply-reward');
+    applyRewardButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const goalId = this.dataset.goalId;
+            const goalName = this.dataset.goalName;
+            const goalAmount = this.dataset.goalAmount;
+            
+            // Update the modal
+            const modal = document.getElementById('applyRewardModal');
+            if (modal) {
+                const goalNameElement = modal.querySelector('#applyRewardGoalNamePlaceholder');
+                const amountElement = modal.querySelector('#applyRewardAmountPlaceholder');
+                const form = modal.querySelector('#applyRewardForm');
+                
+                if (goalNameElement) goalNameElement.textContent = goalName;
+                if (amountElement) amountElement.textContent = `$${parseFloat(goalAmount).toFixed(2)}`;
+                if (form) {
+                    // Update form action with the actual goal ID
+                    const baseUrl = form.action.split('/goals/')[0];
+                    form.action = `${baseUrl}/goals/${goalId}/apply-reward`;
+                }
+                
+                // Show the modal
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+            }
+        });
+    });
+    
     // Handle contribute to goal
     const contributeButtons = document.querySelectorAll('.btn-contribute');
     contributeButtons.forEach(button => {
