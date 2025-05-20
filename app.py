@@ -652,7 +652,21 @@ def goals():
         is_family_goal=True
     ).all()
     
+    # Calculate total family earnings (sum of all children's earnings)
+    family_children = User.query.filter_by(
+        family_id=family.id,
+        role="child"
+    ).all()
+    
+    total_family_earnings = 0
+    for child in family_children:
+        total_family_earnings += calculate_child_earnings(child.id)
+    
     for goal in family_goal_records:
+        # Update the goal's current amount to reflect cumulative family earnings
+        goal.current_amount = total_family_earnings
+        db.session.commit()
+        
         goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         goal_data = {
             "id": goal.id,
@@ -779,17 +793,24 @@ def contribute_to_goal(goal_id):
         flash("Contribution amount must be greater than zero", "danger")
         return redirect(url_for("goals"))
     
-    # Add the contribution amount
-    goal.current_amount += amount
-    
-    # Check if goal is now complete
-    if goal.current_amount >= goal.amount:
-        goal.current_amount = goal.amount
-        flash(f"Congratulations! Goal '{goal.name}' has been fully funded!", "success")
+    # For personal goals, add the contribution directly
+    if not goal.is_family_goal:
+        # Add the contribution amount
+        goal.current_amount += amount
+        
+        # Check if goal is now complete
+        if goal.current_amount >= goal.amount:
+            goal.current_amount = goal.amount
+            flash(f"Congratulations! Goal '{goal.name}' has been fully funded!", "success")
+        else:
+            flash(f"Successfully contributed ${amount:.2f} to '{goal.name}'", "success")
+        
+        db.session.commit()
     else:
-        flash(f"Successfully contributed ${amount:.2f} to '{goal.name}'", "success")
+        # For family goals, we don't manually adjust the amount since it's calculated
+        # from the total children's earnings. Instead, just display a message.
+        flash(f"Family goals are automatically funded based on children's earnings.", "info")
     
-    db.session.commit()
     return redirect(url_for("goals"))
 
 @app.route("/behavior")
