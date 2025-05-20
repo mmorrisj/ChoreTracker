@@ -418,7 +418,7 @@
                 <h5 class="modal-title">Edit Goal</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('edit_goal', goal_id='placeholder') }}" method="post">
+            <form action="{{ url_for('edit_goal', goal_id=0) }}" method="post" id="editGoalForm">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="editGoalName" class="form-label">Goal Name</label>
@@ -479,7 +479,7 @@
                 <h5 class="modal-title">Add Funds to Goal</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('contribute_to_goal', goal_id='placeholder') }}" method="post">
+            <form action="{{ url_for('contribute_to_goal', goal_id=0) }}" method="post" id="contributeGoalForm">
                 <div class="modal-body">
                     <p>Add funds to the goal: <strong id="contributeGoalNamePlaceholder"></strong></p>
                     
