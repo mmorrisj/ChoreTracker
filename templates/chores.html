@@ -206,33 +206,28 @@
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
                     {% set completions_shown = namespace(count=0) %}
-                    {% for completion_id, completion in data["chore_completions"].items() %}
-                        {% if data["chores"].get(completion["chore_id"]) and data["chores"][completion["chore_id"]]["family_id"] == family["id"] %}
-                            {% if is_parent or completion["user_id"] == user["id"] %}
-                                {% set completions_shown.count = completions_shown.count + 1 %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-1">{{ data["chores"][completion["chore_id"]]["name"] }}</h6>
-                                            <p class="text-muted mb-0 small">
-                                                {% if is_parent and completion["user_id"] != user["id"] %}
-                                                    By {{ data["users"][completion["user_id"]]["username"] }} on 
-                                                {% else %}
-                                                    Completed on 
-                                                {% endif %}
-                                                {{ completion["date"] }}
-                                            </p>
-                                        </div>
-                                        <div class="text-end">
-                                            <span class="badge bg-success">${{ "%.2f"|format(completion["amount_earned"]) }}</span>
-                                            <div class="small text-muted">{{ completion["time_spent_minutes"] }} min</div>
-                                        </div>
+                    {% for completion in recent_completions %}
+                        {% if completions_shown.count < 5 %}
+                            {% set completions_shown.count = completions_shown.count + 1 %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ completion.chore_name }}</h6>
+                                        <p class="text-muted mb-0 small">
+                                            {% if is_parent and completion.user_id != current_user.id %}
+                                                By {{ completion.user_name }} on 
+                                            {% else %}
+                                                Completed on 
+                                            {% endif %}
+                                            {{ completion.date }}
+                                        </p>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success">${{ "%.2f"|format(completion.amount_earned) }}</span>
+                                        <div class="small text-muted">{{ completion.time_spent_minutes }} min</div>
                                     </div>
                                 </div>
-                                {% if completions_shown.count >= 5 %}
-                                    {% break %}
-                                {% endif %}
-                            {% endif %}
+                            </div>
                         {% endif %}
                     {% endfor %}
                     
