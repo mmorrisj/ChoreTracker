@@ -84,12 +84,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const timeSpentInput = modal.querySelector('#timeSpent');
                 const choreIdInput = modal.querySelector('#choreId');
                 const childIdInput = modal.querySelector('#childId');
+                const form = modal.querySelector('#completeChoreForm');
                 
                 if (choreNameElement) choreNameElement.textContent = choreName;
                 if (childNameElement) childNameElement.textContent = childName;
                 if (timeSpentInput) timeSpentInput.value = choreTime;
                 if (choreIdInput) choreIdInput.value = choreId;
                 if (childIdInput) childIdInput.value = childId;
+                
+                // Update the form's action URL with the actual chore ID
+                if (form) {
+                    const baseUrl = form.action.split('/chores/')[0];
+                    form.action = `${baseUrl}/chores/${choreId}/complete`;
+                }
                 
                 // Show the modal
                 const bsModal = new bootstrap.Modal(modal);

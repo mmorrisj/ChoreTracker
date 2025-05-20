@@ -262,7 +262,7 @@
                 <h5 class="modal-title">Complete Chore: <span id="choreNamePlaceholder"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('complete_chore', chore_id='placeholder') }}" method="post">
+            <form action="{{ url_for('complete_chore', chore_id=0) }}" method="post" id="completeChoreForm">
                 <div class="modal-body">
                     <input type="hidden" name="chore_id" id="choreId" value="">
                     <input type="hidden" name="child_id" id="childId" value="">
