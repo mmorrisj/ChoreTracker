@@ -391,10 +391,19 @@
             </div>
             <form id="completeChoreForm" action="#" method="post">
                 <div class="modal-body">
-                    <p>Record completion of <strong id="completeChoreNamePlaceholder"></strong> for <strong id="completeChildNamePlaceholder"></strong>:</p>
+                    <p>Record completion of <strong id="completeChoreNamePlaceholder"></strong> <span id="completeForChild">for <strong id="completeChildNamePlaceholder"></strong></span>:</p>
                     
                     <input type="hidden" name="chore_id" value="">
-                    <input type="hidden" name="child_id" value="">
+                    <input type="hidden" name="child_id" value="" id="completeChildIdHidden">
+                    
+                    <div class="mb-3" id="completeChildSelectContainer" style="display: none;">
+                        <label for="completeChildSelect" class="form-label">Assign Completion To</label>
+                        <select class="form-select" id="completeChildSelect" name="child_id_select">
+                            {% for child in children %}
+                            <option value="{{ child.id }}">{{ child.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     
                     <div class="mb-3">
                         <label for="completeChoreTime" class="form-label">Time Spent (minutes)</label>

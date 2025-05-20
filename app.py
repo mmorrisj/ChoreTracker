@@ -608,7 +608,15 @@ def complete_chore(chore_id):
     else:
         completion_date = datetime.date.today()
         
+    # Get child_id from form - could be from hidden input or from the select dropdown
     child_id = request.form.get("child_id")
+    child_id_select = request.form.get("child_id_select")
+    
+    # Use the dropdown selection value if it exists (for unassigned chores)
+    if child_id_select:
+        child_id = child_id_select
+    
+    # If still no child_id, fallback to current user (if child) or assigned user
     if not child_id:
         child_id = user.id if not is_parent else chore.assigned_to
     

@@ -107,25 +107,53 @@ document.addEventListener('DOMContentLoaded', function() {
             const choreId = this.dataset.choreId;
             const choreName = this.dataset.choreName;
             const choreTime = this.dataset.choreTime;
-            const childId = this.dataset.childId;
-            const childName = this.dataset.childName;
+            const childId = this.dataset.childId || '';
+            const childName = this.dataset.childName || '';
+            const isUnassigned = !childId || childId === '';
             
             // Update the modal
             const modal = document.getElementById('completeChoreModal');
             if (modal) {
                 const choreNameElement = modal.querySelector('#completeChoreNamePlaceholder');
                 const childNameElement = modal.querySelector('#completeChildNamePlaceholder');
+                const childContainer = modal.querySelector('#completeForChild');
+                const childSelectContainer = modal.querySelector('#completeChildSelectContainer');
                 const timeSpentInput = modal.querySelector('#completeChoreTime');
                 const dateInput = modal.querySelector('#completeChoreDate');
                 const form = modal.querySelector('form');
                 const choreIdInput = form.querySelector('input[name="chore_id"]');
-                const childIdInput = form.querySelector('input[name="child_id"]');
+                const childIdInput = document.getElementById('completeChildIdHidden');
+                const childSelect = document.getElementById('completeChildSelect');
                 
                 if (choreNameElement) choreNameElement.textContent = choreName;
-                if (childNameElement) childNameElement.textContent = childName;
+                
+                // Handle assigned vs unassigned chores differently
+                if (isUnassigned) {
+                    // For unassigned chores, show the dropdown to select a child
+                    if (childContainer) childContainer.style.display = 'none';
+                    if (childSelectContainer) childSelectContainer.style.display = 'block';
+                    if (childIdInput) childIdInput.value = '';
+                    
+                    // Pre-select the first child in the dropdown
+                    if (childSelect && childSelect.options.length > 0) {
+                        childSelect.selectedIndex = 0;
+                        // Update the hidden input when dropdown changes
+                        childSelect.addEventListener('change', function() {
+                            childIdInput.value = this.value;
+                        });
+                        // Set initial value
+                        childIdInput.value = childSelect.value;
+                    }
+                } else {
+                    // For assigned chores, show the child's name
+                    if (childContainer) childContainer.style.display = 'inline';
+                    if (childNameElement) childNameElement.textContent = childName;
+                    if (childSelectContainer) childSelectContainer.style.display = 'none';
+                    if (childIdInput) childIdInput.value = childId;
+                }
+                
                 if (timeSpentInput) timeSpentInput.value = choreTime;
                 if (choreIdInput) choreIdInput.value = choreId;
-                if (childIdInput) childIdInput.value = childId;
                 
                 // Ensure date is set to today
                 if (dateInput) {
