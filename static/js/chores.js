@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const choreNameElement = modal.querySelector('#completeChoreNamePlaceholder');
                 const childNameElement = modal.querySelector('#completeChildNamePlaceholder');
                 const timeSpentInput = modal.querySelector('#completeChoreTime');
+                const dateInput = modal.querySelector('#completeChoreDate');
                 const form = modal.querySelector('form');
                 const choreIdInput = form.querySelector('input[name="chore_id"]');
                 const childIdInput = form.querySelector('input[name="child_id"]');
@@ -125,6 +126,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (timeSpentInput) timeSpentInput.value = choreTime;
                 if (choreIdInput) choreIdInput.value = choreId;
                 if (childIdInput) childIdInput.value = childId;
+                
+                // Ensure date is set to today
+                if (dateInput) {
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    dateInput.value = `${year}-${month}-${day}`;
+                }
+                
                 if (form) form.action = `/chores/${choreId}/complete`;
                 
                 // Show the modal
