@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (modal) {
                 const form = modal.querySelector('form');
                 form.action = `/chores/${choreId}/edit`;
+                form.id = 'editChoreForm';
                 
                 const nameInput = modal.querySelector('#editChoreName');
                 const descriptionInput = modal.querySelector('#editChoreDescription');
