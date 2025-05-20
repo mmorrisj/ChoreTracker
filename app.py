@@ -54,6 +54,7 @@ from models import User, Family, Chore, ChoreCompletion, Goal, BehaviorRecord
 
 # Database initialization
 def init_db():
+    """Initialize database tables and create initial data if needed."""
     # Create tables if they don't exist
     db.create_all()
     
