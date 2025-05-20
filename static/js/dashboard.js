@@ -1,6 +1,36 @@
 // dashboard.js - Handles dashboard functionality
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Child filter dropdown functionality
+    const childFilter = document.getElementById('childFilter');
+    if (childFilter) {
+        childFilter.addEventListener('change', function() {
+            const selectedValue = this.value;
+            const childCards = document.querySelectorAll('.child-card');
+            
+            // Show/hide children based on selection
+            childCards.forEach(card => {
+                const childId = card.dataset.childId;
+                if (selectedValue === 'all' || childId === selectedValue) {
+                    card.closest('.col-md-6').style.display = 'block';
+                } else {
+                    card.closest('.col-md-6').style.display = 'none';
+                }
+            });
+            
+            // Also filter goals in the goals section
+            const goalItems = document.querySelectorAll('.goal-item');
+            goalItems.forEach(item => {
+                const goalChildId = item.dataset.childId;
+                if (selectedValue === 'all' || goalChildId === selectedValue) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+    
     // Initialize earnings charts for children if present
     const childChartElements = document.querySelectorAll('.child-earnings-chart');
     if (childChartElements.length > 0) {
