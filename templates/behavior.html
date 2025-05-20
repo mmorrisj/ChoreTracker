@@ -178,12 +178,43 @@
                             <div class="card-body py-2">
                                 <h6 class="mb-2">{{ child.name }}</h6>
                                 <div class="d-flex">
-                                    <button class="btn btn-sm btn-success me-2 btn-quick-behavior" 
-                                            data-behavior-type="positive" 
-                                            data-child-id="{{ child.id }}" 
-                                            data-child-name="{{ child.name }}">
-                                        <i class="fas fa-plus-circle me-1"></i>Award
-                                    </button>
+                                    <div class="dropdown me-2">
+                                        <button class="btn btn-sm btn-success dropdown-toggle" type="button" id="awardDropdown{{ child.id }}"
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-plus-circle me-1"></i>Award
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="awardDropdown{{ child.id }}">
+                                            <li><a class="dropdown-item btn-quick-behavior-preset" href="#" 
+                                                  data-behavior-type="positive" 
+                                                  data-child-id="{{ child.id }}"
+                                                  data-child-name="{{ child.name }}"
+                                                  data-description="Helping others"
+                                                  data-amount="0.25">Helping others</a></li>
+                                            <li><a class="dropdown-item btn-quick-behavior-preset" href="#" 
+                                                  data-behavior-type="positive" 
+                                                  data-child-id="{{ child.id }}"
+                                                  data-child-name="{{ child.name }}"
+                                                  data-description="Good listening"
+                                                  data-amount="0.25">Good listening</a></li>
+                                            <li><a class="dropdown-item btn-quick-behavior-preset" href="#" 
+                                                  data-behavior-type="positive" 
+                                                  data-child-id="{{ child.id }}"
+                                                  data-child-name="{{ child.name }}"
+                                                  data-description="Taking initiative"
+                                                  data-amount="0.25">Taking initiative</a></li>
+                                            <li><a class="dropdown-item btn-quick-behavior-preset" href="#" 
+                                                  data-behavior-type="positive" 
+                                                  data-child-id="{{ child.id }}"
+                                                  data-child-name="{{ child.name }}"
+                                                  data-description="Good attitude"
+                                                  data-amount="0.25">Good attitude</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item btn-quick-behavior" href="#" 
+                                                  data-behavior-type="positive" 
+                                                  data-child-id="{{ child.id }}"
+                                                  data-child-name="{{ child.name }}">Custom award...</a></li>
+                                        </ul>
+                                    </div>
                                     <button class="btn btn-sm btn-danger btn-quick-behavior" 
                                             data-behavior-type="negative" 
                                             data-child-id="{{ child.id }}" 
@@ -412,6 +443,11 @@
                     <div class="mb-3">
                         <label for="quickAmount" class="form-label">Amount ($)</label>
                         <input type="number" class="form-control" id="quickAmount" name="amount" min="0.01" step="0.01" value="1.00" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ today }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">

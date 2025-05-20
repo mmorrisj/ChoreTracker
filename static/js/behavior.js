@@ -84,6 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const childNameElement = modal.querySelector('#quickBehaviorChildName');
                 const behaviorTypeInput = modal.querySelector('#quickBehaviorType');
                 const childIdInput = modal.querySelector('#quickBehaviorChildId');
+                const dateInput = modal.querySelector('#date');
                 
                 if (titleElement) {
                     titleElement.textContent = behaviorType === 'positive' ? 'Quick Award' : 'Quick Deduction';
@@ -92,6 +93,64 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (childNameElement) childNameElement.textContent = childName;
                 if (behaviorTypeInput) behaviorTypeInput.value = behaviorType;
                 if (childIdInput) childIdInput.value = childId;
+                
+                // Set today's date
+                if (dateInput) {
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    dateInput.value = `${year}-${month}-${day}`;
+                }
+                
+                // Show the modal
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+            }
+        });
+    });
+    
+    // Handle preset behavior awards
+    const quickBehaviorPresetButtons = document.querySelectorAll('.btn-quick-behavior-preset');
+    quickBehaviorPresetButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const behaviorType = this.dataset.behaviorType;
+            const childId = this.dataset.childId;
+            const childName = this.dataset.childName;
+            const description = this.dataset.description;
+            const amount = this.dataset.amount;
+            
+            // Update the modal
+            const modal = document.getElementById('quickBehaviorModal');
+            if (modal) {
+                const titleElement = modal.querySelector('#quickBehaviorTitle');
+                const childNameElement = modal.querySelector('#quickBehaviorChildName');
+                const behaviorTypeInput = modal.querySelector('#quickBehaviorType');
+                const childIdInput = modal.querySelector('#quickBehaviorChildId');
+                const descriptionInput = modal.querySelector('#quickDescription');
+                const amountInput = modal.querySelector('#quickAmount');
+                const dateInput = modal.querySelector('#date');
+                
+                if (titleElement) {
+                    titleElement.textContent = 'Quick Award';
+                }
+                
+                if (childNameElement) childNameElement.textContent = childName;
+                if (behaviorTypeInput) behaviorTypeInput.value = behaviorType;
+                if (childIdInput) childIdInput.value = childId;
+                if (descriptionInput) descriptionInput.value = description;
+                if (amountInput) amountInput.value = amount;
+                
+                // Set today's date
+                if (dateInput) {
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    dateInput.value = `${year}-${month}-${day}`;
+                }
                 
                 // Show the modal
                 const bsModal = new bootstrap.Modal(modal);
