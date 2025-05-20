@@ -32,6 +32,14 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# Create context processor to inject today's date into all templates
+@app.context_processor
+def inject_utilities():
+    """Add utility functions and values to templates"""
+    return {
+        'today': datetime.date.today().strftime('%Y-%m-%d')
+    }
+
 # Load user for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
