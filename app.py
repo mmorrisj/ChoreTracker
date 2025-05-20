@@ -708,64 +708,70 @@ def add_goal():
         flash("Goal amount must be greater than zero", "danger")
         return redirect(url_for("goals"))
     
-    # Generate a unique ID
-    goal_id = f"goal{len(data['goals']) + 1}"
+    # Create a new goal in the database
+    new_goal = Goal(
+        family_id=family_id,
+        user_id=user_id,
+        name=name,
+        description=description,
+        amount=amount,
+        current_amount=0,
+        is_family_goal=(goal_type == "family")
+    )
     
-    # Create the new goal
-    data["goals"][goal_id] = {
-        "id": goal_id,
-        "family_id": family_id,
-        "user_id": user_id,
-        "name": name,
-        "description": description,
-        "amount": amount,
-        "current_amount": 0,
-        "is_family_goal": goal_type == "family"
-    }
+    db.session.add(new_goal)
+    db.session.commit()
     
     flash(f"Goal '{name}' added successfully", "success")
-    save_data()
     return redirect(url_for("goals"))
 
-@app.route("/goals/<goal_id>/edit", methods=["POST"])
+@app.route("/goals/<int:goal_id>/edit", methods=["POST"])
 @parent_required
 def edit_goal(goal_id):
-    goal = data["goals"].get(goal_id)
-    if not goal:
-        flash("Goal not found", "danger")
+    goal = Goal.query.get_or_404(goal_id)
+    # Check if the goal belongs to the user's family
+    if goal.family_id != current_user.family_id:
+        flash("You don't have permission to edit this goal", "danger")
         return redirect(url_for("goals"))
     
-    goal["name"] = request.form.get("name", goal["name"])
-    goal["description"] = request.form.get("description", goal["description"])
-    goal["amount"] = request.form.get("amount", goal["amount"], type=float)
-    goal["current_amount"] = request.form.get("current_amount", goal["current_amount"], type=float)
+    goal.name = request.form.get("name", goal.name)
+    goal.description = request.form.get("description", goal.description)
+    goal.amount = request.form.get("amount", goal.amount, type=float)
+    goal.current_amount = request.form.get("current_amount", goal.current_amount, type=float)
     
     # Ensure current amount doesn't exceed the goal amount
-    if goal["current_amount"] > goal["amount"]:
-        goal["current_amount"] = goal["amount"]
+    if goal.current_amount > goal.amount:
+        goal.current_amount = goal.amount
     
+    db.session.commit()
     flash("Goal updated successfully", "success")
-    save_data()
     return redirect(url_for("goals"))
 
-@app.route("/goals/<goal_id>/delete", methods=["POST"])
+@app.route("/goals/<int:goal_id>/delete", methods=["POST"])
 @parent_required
 def delete_goal(goal_id):
-    if goal_id in data["goals"]:
-        del data["goals"][goal_id]
-        flash("Goal deleted successfully", "success")
-        save_data()
-    else:
-        flash("Goal not found", "danger")
+    goal = Goal.query.get_or_404(goal_id)
     
+    # Check if the goal belongs to the user's family
+    if goal.family_id != current_user.family_id:
+        flash("You don't have permission to delete this goal", "danger")
+        return redirect(url_for("goals"))
+    
+    # Delete the goal
+    db.session.delete(goal)
+    db.session.commit()
+    
+    flash("Goal deleted successfully", "success")
     return redirect(url_for("goals"))
 
-@app.route("/goals/<goal_id>/contribute", methods=["POST"])
+@app.route("/goals/<int:goal_id>/contribute", methods=["POST"])
 @parent_required
 def contribute_to_goal(goal_id):
-    goal = data["goals"].get(goal_id)
-    if not goal:
-        flash("Goal not found", "danger")
+    goal = Goal.query.get_or_404(goal_id)
+    
+    # Check if the goal belongs to the user's family
+    if goal.family_id != current_user.family_id:
+        flash("You don't have permission to contribute to this goal", "danger")
         return redirect(url_for("goals"))
     
     amount = request.form.get("amount", 0, type=float)
@@ -773,16 +779,17 @@ def contribute_to_goal(goal_id):
         flash("Contribution amount must be greater than zero", "danger")
         return redirect(url_for("goals"))
     
-    goal["current_amount"] += amount
+    # Add the contribution amount
+    goal.current_amount += amount
     
     # Check if goal is now complete
-    if goal["current_amount"] >= goal["amount"]:
-        goal["current_amount"] = goal["amount"]
-        flash(f"Congratulations! Goal '{goal['name']}' has been fully funded!", "success")
+    if goal.current_amount >= goal.amount:
+        goal.current_amount = goal.amount
+        flash(f"Congratulations! Goal '{goal.name}' has been fully funded!", "success")
     else:
-        flash(f"Successfully contributed ${amount:.2f} to '{goal['name']}'", "success")
+        flash(f"Successfully contributed ${amount:.2f} to '{goal.name}'", "success")
     
-    save_data()
+    db.session.commit()
     return redirect(url_for("goals"))
 
 @app.route("/behavior")
