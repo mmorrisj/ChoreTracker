@@ -303,7 +303,7 @@
                     
                     <div class="mb-3">
                         <label for="date" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="date" name="date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ today }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -355,7 +355,7 @@
                     
                     <div class="mb-3">
                         <label for="editBehaviorDate" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="editBehaviorDate" name="date" required>
+                        <input type="date" class="form-control" id="editBehaviorDate" name="date" value="{{ today }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
