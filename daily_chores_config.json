@@ -1,0 +1,69 @@
+{
+  "daily_chores": [
+    {
+      "name": "Make Your Bed",
+      "description": "Make your bed every morning before starting the day",
+      "base_amount": 0.25,
+      "max_amount": 2.00,
+      "streak_increment": 0.25,
+      "streak_threshold": 5
+    },
+    {
+      "name": "Brush Teeth (Morning)",
+      "description": "Brush your teeth every morning",
+      "base_amount": 0.25,
+      "max_amount": 1.50,
+      "streak_increment": 0.25,
+      "streak_threshold": 5
+    },
+    {
+      "name": "Brush Teeth (Evening)",
+      "description": "Brush your teeth every evening before bed",
+      "base_amount": 0.25,
+      "max_amount": 1.50,
+      "streak_increment": 0.25,
+      "streak_threshold": 5
+    },
+    {
+      "name": "Put Dirty Clothes in Hamper",
+      "description": "Put all dirty clothes in the laundry hamper",
+      "base_amount": 0.25,
+      "max_amount": 1.00,
+      "streak_increment": 0.15,
+      "streak_threshold": 5
+    },
+    {
+      "name": "Clear Your Dishes",
+      "description": "Clear your dishes from the table after eating",
+      "base_amount": 0.25,
+      "max_amount": 1.25,
+      "streak_increment": 0.20,
+      "streak_threshold": 5
+    },
+    {
+      "name": "Pack School Backpack",
+      "description": "Pack your backpack with homework and supplies for school",
+      "base_amount": 0.30,
+      "max_amount": 1.75,
+      "streak_increment": 0.25,
+      "streak_threshold": 5
+    }
+  ],
+  "streak_bonuses": [
+    {
+      "days": 5,
+      "bonus": 1.00,
+      "title": "5-Day Streak Bonus"
+    },
+    {
+      "days": 10,
+      "bonus": 2.50,
+      "title": "10-Day Streak Bonus"
+    },
+    {
+      "days": 30,
+      "bonus": 10.00,
+      "title": "30-Day Streak Bonus"
+    }
+  ]
+}

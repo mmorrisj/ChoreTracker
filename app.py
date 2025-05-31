@@ -40,6 +40,95 @@ def inject_utilities():
         'today': datetime.date.today().strftime('%Y-%m-%d')
     }
 
+def load_daily_chores_config():
+    """Load daily chores configuration from JSON file"""
+    try:
+        with open('daily_chores_config.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"daily_chores": [], "streak_bonuses": []}
+
+def sync_daily_chores_from_config():
+    """Sync daily chores from config file to database"""
+    from models import DailyChore
+    config = load_daily_chores_config()
+    
+    for chore_config in config.get('daily_chores', []):
+        existing_chore = DailyChore.query.filter_by(name=chore_config['name']).first()
+        
+        if existing_chore:
+            # Update existing chore
+            existing_chore.description = chore_config.get('description', '')
+            existing_chore.base_amount = chore_config['base_amount']
+            existing_chore.max_amount = chore_config['max_amount']
+            existing_chore.streak_increment = chore_config['streak_increment']
+            existing_chore.streak_threshold = chore_config['streak_threshold']
+        else:
+            # Create new chore
+            new_chore = DailyChore(
+                name=chore_config['name'],
+                description=chore_config.get('description', ''),
+                base_amount=chore_config['base_amount'],
+                max_amount=chore_config['max_amount'],
+                streak_increment=chore_config['streak_increment'],
+                streak_threshold=chore_config['streak_threshold']
+            )
+            db.session.add(new_chore)
+    
+    db.session.commit()
+
+def calculate_streak_for_user_chore(user_id, daily_chore_id, completion_date):
+    """Calculate the current streak for a user's daily chore"""
+    from models import DailyChoreCompletion
+    # Get all completions for this user and chore, ordered by date descending
+    completions = DailyChoreCompletion.query.filter_by(
+        user_id=user_id,
+        daily_chore_id=daily_chore_id
+    ).filter(
+        DailyChoreCompletion.date <= completion_date
+    ).order_by(DailyChoreCompletion.date.desc()).all()
+    
+    if not completions:
+        return 1
+    
+    # Check for consecutive days
+    streak = 1
+    current_date = completion_date
+    
+    for completion in completions:
+        expected_date = current_date - datetime.timedelta(days=1)
+        if completion.date == expected_date:
+            streak += 1
+            current_date = completion.date
+        elif completion.date == current_date:
+            # Same day completion (shouldn't happen due to unique constraint)
+            continue
+        else:
+            # Gap in streak
+            break
+    
+    return streak
+
+def calculate_streak_earnings(daily_chore, streak_count):
+    """Calculate earnings based on streak count"""
+    config = load_daily_chores_config()
+    
+    # Calculate base earnings with streak multiplier
+    streak_multiplier = (streak_count - 1) // daily_chore.streak_threshold
+    earnings = daily_chore.base_amount + (streak_multiplier * daily_chore.streak_increment)
+    
+    # Cap at maximum amount
+    earnings = min(earnings, daily_chore.max_amount)
+    
+    # Check for streak bonuses
+    bonus = 0.0
+    for bonus_config in config.get('streak_bonuses', []):
+        if streak_count == bonus_config['days']:
+            bonus = bonus_config['bonus']
+            break
+    
+    return earnings, bonus
+
 # Load user for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):

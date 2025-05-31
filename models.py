@@ -113,3 +113,46 @@ class BehaviorRecord(db.Model):
     # Relationships
     family = db.relationship('Family', back_populates='behavior_records')
     user = db.relationship('User', back_populates='behavior_records')
+
+
+class DailyChore(db.Model):
+    """
+    Represents a daily chore configuration from the config file.
+    """
+    __tablename__ = 'daily_chores'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    base_amount = db.Column(db.Float, nullable=False)
+    max_amount = db.Column(db.Float, nullable=False)
+    streak_increment = db.Column(db.Float, nullable=False)
+    streak_threshold = db.Column(db.Integer, nullable=False, default=5)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    completions = db.relationship('DailyChoreCompletion', back_populates='daily_chore')
+
+
+class DailyChoreCompletion(db.Model):
+    """
+    Represents a daily chore completion record.
+    """
+    __tablename__ = 'daily_chore_completions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    daily_chore_id = db.Column(db.Integer, db.ForeignKey('daily_chores.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
+    date = db.Column(db.Date, default=datetime.date.today, nullable=False)
+    amount_earned = db.Column(db.Float, nullable=False)
+    current_streak = db.Column(db.Integer, default=1)
+    streak_bonus_earned = db.Column(db.Float, default=0.0)
+    
+    # Relationships
+    daily_chore = db.relationship('DailyChore', back_populates='completions')
+    user = db.relationship('User', foreign_keys=[user_id])
+    family = db.relationship('Family', foreign_keys=[family_id])
+    
+    # Ensure one completion per user per chore per day
+    __table_args__ = (db.UniqueConstraint('daily_chore_id', 'user_id', 'date', name='unique_daily_chore_completion'),)
