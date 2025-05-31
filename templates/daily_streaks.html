@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Streak Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Daily Streak Tracker</h2>
+                <div class="text-muted">
+                    <i class="fas fa-fire text-warning me-1"></i>
+                    Build streaks, earn rewards!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Streak Bonuses Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-trophy text-warning me-2"></i>Streak Bonuses</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for bonus in streak_bonuses %}
+                        <div class="col-md-4 mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="badge bg-warning text-dark me-2">{{ bonus.days }} Days</div>
+                                <span class="text-success">${{ "%.2f"|format(bonus.bonus) }}</span>
+                                <small class="text-muted ms-2">{{ bonus.title }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Chores Grid -->
+    <div class="row">
+        {% for child in children %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ child.username.title() }}'s Daily Streaks</h5>
+                    <div class="badge bg-info">{{ children|length }} {% if children|length == 1 %}Child{% else %}Children{% endif %}</div>
+                </div>
+                <div class="card-body p-0">
+                    {% if daily_chores %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Daily Chore</th>
+                                    <th class="text-center">Streak</th>
+                                    <th class="text-center">Today</th>
+                                    <th class="text-center">Earnings</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for chore in daily_chores %}
+                                {% set chore_data = streak_data[child.id][chore.id] %}
+                                <tr class="chore-row" data-chore-id="{{ chore.id }}" data-child-id="{{ child.id }}">
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <strong>{{ chore.name }}</strong>
+                                            <small class="text-muted">{{ chore.description }}</small>
+                                            <div class="mt-1">
+                                                <span class="badge bg-secondary">${{ "%.2f"|format(chore.base_amount) }}</span>
+                                                <span class="badge bg-info">→ ${{ "%.2f"|format(chore.max_amount) }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex flex-column align-items-center">
+                                            {% if chore_data.streak > 0 %}
+                                            <div class="streak-counter">
+                                                <span class="badge 
+                                                    {% if chore_data.streak >= 30 %}bg-danger
+                                                    {% elif chore_data.streak >= 10 %}bg-warning text-dark
+                                                    {% elif chore_data.streak >= 5 %}bg-success
+                                                    {% else %}bg-info{% endif %} 
+                                                    fs-6">
+                                                    <i class="fas fa-fire me-1"></i>{{ chore_data.streak }}
+                                                </span>
+                                            </div>
+                                            {% if chore_data.last_completion %}
+                                            <small class="text-muted">Last: {{ chore_data.last_completion.strftime('%m/%d') }}</small>
+                                            {% endif %}
+                                            {% else %}
+                                            <span class="text-muted">No streak</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if chore_data.completed_today %}
+                                        <i class="fas fa-check-circle text-success fs-4"></i>
+                                        {% else %}
+                                        <i class="fas fa-circle text-muted"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="text-success fw-bold">${{ "%.2f"|format(chore_data.current_earnings) }}</span>
+                                            {% if chore_data.potential_bonus > 0 %}
+                                            <small class="text-warning">+${{ "%.2f"|format(chore_data.potential_bonus) }} bonus</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if chore_data.can_complete %}
+                                        {% if is_parent %}
+                                        <button class="btn btn-sm btn-success btn-complete-daily-chore"
+                                                data-chore-id="{{ chore.id }}" 
+                                                data-chore-name="{{ chore.name }}"
+                                                data-child-id="{{ child.id }}"
+                                                data-child-name="{{ child.username }}">
+                                            <i class="fas fa-plus-circle me-1"></i>Complete
+                                        </button>
+                                        {% elif child.id == current_user.id %}
+                                        <button class="btn btn-sm btn-success btn-complete-daily-chore"
+                                                data-chore-id="{{ chore.id }}" 
+                                                data-chore-name="{{ chore.name }}"
+                                                data-child-id="{{ child.id }}"
+                                                data-child-name="{{ child.username }}">
+                                            <i class="fas fa-plus-circle me-1"></i>Complete
+                                        </button>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-success">Done Today!</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5">
+                        <i class="fas fa-calendar-day fa-3x text-muted mb-3"></i>
+                        <h5>No Daily Chores Configured</h5>
+                        <p class="text-muted">Configure daily chores in the daily_chores_config.json file</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not children %}
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center p-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5>No Children in Family</h5>
+                <p class="text-muted">Add children to your family to start tracking daily streaks</p>
+                {% if is_parent %}
+                <a href="{{ url_for('settings') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i>Add Family Members
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Complete Daily Chore Modal -->
+<div class="modal fade" id="completeDailyChoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complete Daily Chore</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="completeDailyChoreForm" action="#" method="post">
+                <div class="modal-body">
+                    <p>Mark <strong id="completeDailyChoreNamePlaceholder"></strong> as complete for <strong id="completeDailyChildNamePlaceholder"></strong>:</p>
+                    
+                    <input type="hidden" name="child_id" id="completeDailyChildId" value="">
+                    
+                    <div class="mb-3">
+                        <label for="completeDailyChoreDate" class="form-label">Completion Date</label>
+                        <input type="date" class="form-control" id="completeDailyChoreDate" name="completion_date" value="{{ today }}" required>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Current streak will be calculated automatically based on previous completions.</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-fire me-1"></i>Complete & Update Streak
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle daily chore completion buttons
+    const completeButtons = document.querySelectorAll('.btn-complete-daily-chore');
+    completeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const choreId = this.dataset.choreId;
+            const choreName = this.dataset.choreName;
+            const childId = this.dataset.childId;
+            const childName = this.dataset.childName;
+            
+            // Update the modal
+            const modal = document.getElementById('completeDailyChoreModal');
+            if (modal) {
+                const choreNameElement = modal.querySelector('#completeDailyChoreNamePlaceholder');
+                const childNameElement = modal.querySelector('#completeDailyChildNamePlaceholder');
+                const childIdInput = modal.querySelector('#completeDailyChildId');
+                const dateInput = modal.querySelector('#completeDailyChoreDate');
+                const form = modal.querySelector('#completeDailyChoreForm');
+                
+                if (choreNameElement) choreNameElement.textContent = choreName;
+                if (childNameElement) childNameElement.textContent = childName;
+                if (childIdInput) childIdInput.value = childId;
+                if (form) form.action = `/daily-chores/${choreId}/complete`;
+                
+                // Set today's date
+                if (dateInput) {
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    dateInput.value = `${year}-${month}-${day}`;
+                }
+                
+                // Show the modal
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -300,6 +300,8 @@ def init_db():
 # Initialize database
 with app.app_context():
     init_db()
+    # Sync daily chores from configuration
+    sync_daily_chores_from_config()
 
 # Make utility functions available to all templates
 @app.context_processor
@@ -1394,6 +1396,151 @@ def delete_family_member(user_id):
     db.session.commit()
     flash(f"Family member deleted successfully", "success")
     return redirect(url_for("settings"))
+
+@app.route("/daily-streaks")
+@login_required
+def daily_streaks():
+    """Display daily chore streak tracking page"""
+    from models import DailyChore, DailyChoreCompletion
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
+    
+    # Get all daily chores
+    daily_chores = DailyChore.query.filter_by(is_active=True).all()
+    
+    # Get all children in the family
+    children = User.query.filter_by(family_id=family.id, role="child").all()
+    
+    # Calculate streaks for each child and chore
+    streak_data = {}
+    today = datetime.date.today()
+    
+    for child in children:
+        streak_data[child.id] = {}
+        for chore in daily_chores:
+            # Get the latest completion for this chore by this child
+            latest_completion = DailyChoreCompletion.query.filter_by(
+                user_id=child.id,
+                daily_chore_id=chore.id
+            ).order_by(DailyChoreCompletion.date.desc()).first()
+            
+            if latest_completion:
+                # Calculate current streak
+                streak = calculate_streak_for_user_chore(child.id, chore.id, latest_completion.date)
+                
+                # Check if completed today
+                completed_today = DailyChoreCompletion.query.filter_by(
+                    user_id=child.id,
+                    daily_chore_id=chore.id,
+                    date=today
+                ).first() is not None
+                
+                # Calculate current earnings rate
+                earnings, bonus = calculate_streak_earnings(chore, streak)
+                
+                streak_data[child.id][chore.id] = {
+                    'streak': streak,
+                    'completed_today': completed_today,
+                    'last_completion': latest_completion.date,
+                    'current_earnings': earnings,
+                    'potential_bonus': bonus,
+                    'can_complete': not completed_today
+                }
+            else:
+                # No completions yet
+                streak_data[child.id][chore.id] = {
+                    'streak': 0,
+                    'completed_today': False,
+                    'last_completion': None,
+                    'current_earnings': chore.base_amount,
+                    'potential_bonus': 0.0,
+                    'can_complete': True
+                }
+    
+    # Load streak bonuses configuration
+    config = load_daily_chores_config()
+    streak_bonuses = config.get('streak_bonuses', [])
+    
+    return render_template('daily_streaks.html', 
+                         daily_chores=daily_chores,
+                         children=children,
+                         streak_data=streak_data,
+                         streak_bonuses=streak_bonuses,
+                         is_parent=is_parent,
+                         today=today)
+
+@app.route("/daily-chores/<int:chore_id>/complete", methods=["POST"])
+@login_required
+def complete_daily_chore(chore_id):
+    """Complete a daily chore and record streak"""
+    from models import DailyChore, DailyChoreCompletion
+    user = current_user
+    is_parent = user.role == "parent"
+    
+    # Get the daily chore
+    daily_chore = DailyChore.query.get_or_404(chore_id)
+    
+    # Get completion date and child
+    completion_date_str = request.form.get("completion_date")
+    child_id = request.form.get("child_id")
+    
+    if completion_date_str:
+        try:
+            completion_date = datetime.datetime.strptime(completion_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            completion_date = datetime.date.today()
+    else:
+        completion_date = datetime.date.today()
+    
+    # Determine which child is completing the chore
+    if is_parent and child_id:
+        child = User.query.get_or_404(child_id)
+        if child.family_id != user.family_id:
+            flash("Invalid child selection", "danger")
+            return redirect(url_for("daily_streaks"))
+    else:
+        child = user
+    
+    # Check if already completed today
+    existing_completion = DailyChoreCompletion.query.filter_by(
+        daily_chore_id=chore_id,
+        user_id=child.id,
+        date=completion_date
+    ).first()
+    
+    if existing_completion:
+        flash(f"'{daily_chore.name}' has already been completed today for {child.username}", "warning")
+        return redirect(url_for("daily_streaks"))
+    
+    # Calculate current streak
+    streak = calculate_streak_for_user_chore(child.id, chore_id, completion_date)
+    
+    # Calculate earnings
+    earnings, bonus = calculate_streak_earnings(daily_chore, streak)
+    
+    # Create completion record
+    completion = DailyChoreCompletion(
+        daily_chore_id=chore_id,
+        user_id=child.id,
+        family_id=child.family_id,
+        date=completion_date,
+        amount_earned=earnings,
+        current_streak=streak,
+        streak_bonus_earned=bonus
+    )
+    
+    db.session.add(completion)
+    db.session.commit()
+    
+    # Create success message
+    message = f"'{daily_chore.name}' completed! Earned ${earnings:.2f}"
+    if bonus > 0:
+        message += f" + ${bonus:.2f} streak bonus"
+    message += f" (Streak: {streak} days)"
+    
+    flash(message, "success")
+    return redirect(url_for("daily_streaks"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
