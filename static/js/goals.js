@@ -182,6 +182,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Handle reset goal buttons
+    const resetGoalButtons = document.querySelectorAll('.btn-reset-goal');
+    resetGoalButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const goalId = this.dataset.goalId;
+            const goalName = this.dataset.goalName;
+            
+            // Update the modal
+            const modal = document.getElementById('resetGoalModal');
+            if (modal) {
+                const goalNameElement = modal.querySelector('#resetGoalNamePlaceholder');
+                const form = modal.querySelector('#resetGoalForm');
+                
+                if (goalNameElement) goalNameElement.textContent = goalName;
+                if (form) form.action = `/goals/${goalId}/reset`;
+                
+                // Show the modal
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+            }
+        });
+    });
+    
     // Toggle between individual and family goals in add goal modal
     const goalTypeRadios = document.querySelectorAll('input[name="goal_type"]');
     goalTypeRadios.forEach(radio => {

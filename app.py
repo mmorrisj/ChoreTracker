@@ -818,6 +818,23 @@ def delete_goal(goal_id):
     flash("Goal deleted successfully", "success")
     return redirect(url_for("goals"))
 
+@app.route("/goals/<int:goal_id>/reset", methods=["POST"])
+@parent_required
+def reset_goal(goal_id):
+    goal = Goal.query.get_or_404(goal_id)
+    
+    # Check if the goal belongs to the user's family
+    if goal.family_id != current_user.family_id:
+        flash("You don't have permission to reset this goal", "danger")
+        return redirect(url_for("goals"))
+    
+    # Reset the current amount to zero
+    goal.current_amount = 0.0
+    db.session.commit()
+    
+    flash(f"Goal '{goal.name}' funds have been reset to $0.00", "success")
+    return redirect(url_for("goals"))
+
 @app.route("/goals/<int:goal_id>/contribute", methods=["POST"])
 @parent_required
 def contribute_to_goal(goal_id):
