@@ -457,7 +457,21 @@ def dashboard():
         is_family_goal=True
     ).all()
     
+    # Calculate total family earnings for family goals
+    family_children = User.query.filter_by(
+        family_id=family.id,
+        role="child"
+    ).all()
+    
+    total_family_earnings = 0
+    for child in family_children:
+        total_family_earnings += calculate_child_earnings(child.id)
+    
     for goal in family_goal_records:
+        # Calculate effective current amount accounting for resets
+        effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
+        goal.current_amount = effective_current_amount
+        
         goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         family_goals.append({
             "id": goal.id,
@@ -794,8 +808,9 @@ def goals():
         total_family_earnings += calculate_child_earnings(child.id)
     
     for goal in family_goal_records:
-        # Update the goal's current amount to reflect cumulative family earnings
-        goal.current_amount = total_family_earnings
+        # Calculate the effective current amount (total earnings minus any reset amount)
+        effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
+        goal.current_amount = effective_current_amount
         db.session.commit()
         
         goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
@@ -919,11 +934,26 @@ def reset_goal(goal_id):
         flash("You don't have permission to reset this goal", "danger")
         return redirect(url_for("goals"))
     
-    # Reset the current amount to zero
-    goal.current_amount = 0.0
+    if goal.is_family_goal:
+        # For family goals, set reset_amount to current total family earnings
+        family_children = User.query.filter_by(
+            family_id=goal.family_id,
+            role="child"
+        ).all()
+        
+        total_family_earnings = 0
+        for child in family_children:
+            total_family_earnings += calculate_child_earnings(child.id)
+        
+        goal.reset_amount = total_family_earnings
+        goal.current_amount = 0.0
+    else:
+        # For individual goals, just reset current amount
+        goal.current_amount = 0.0
+    
     db.session.commit()
     
-    flash(f"Goal '{goal.name}' funds have been reset to $0.00", "success")
+    flash(f"Goal '{goal.name}' progress has been reset to $0.00", "success")
     return redirect(url_for("goals"))
 
 @app.route("/goals/<int:goal_id>/contribute", methods=["POST"])

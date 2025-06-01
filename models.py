@@ -91,6 +91,7 @@ class Goal(db.Model):
     amount = db.Column(db.Float, nullable=False)
     current_amount = db.Column(db.Float, default=0.0)
     is_family_goal = db.Column(db.Boolean, default=False)
+    reset_amount = db.Column(db.Float, default=0.0)  # Track amount that was reset
     
     # Relationships
     family = db.relationship('Family', back_populates='goals')
