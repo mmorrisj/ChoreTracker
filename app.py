@@ -1150,20 +1150,18 @@ def delete_behavior(record_id):
 @app.route("/calendar")
 @login_required
 def calendar():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
-    is_parent = user["role"] == "parent"
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
     
-
     # Get all children in the family for filtering
     children = []
-    for child_id in family["child_ids"]:
-        child = data["users"].get(child_id)
-        if child:
-            children.append({
-                "id": child["id"],
-                "name": child["username"]
-            })
+    family_children = User.query.filter_by(family_id=family.id, role="child").all()
+    for child in family_children:
+        children.append({
+            "id": child.id,
+            "name": child.username
+        })
     
     return render_template(
         "calendar.html",
@@ -1176,9 +1174,9 @@ def calendar():
 @app.route("/api/calendar-events")
 @login_required
 def calendar_events():
-    user = data["users"].get(session["user_id"])
-    family = data["families"].get(user["family_id"])
-    is_parent = user["role"] == "parent"
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
     
     start_date = request.args.get("start")
     end_date = request.args.get("end")
@@ -1186,64 +1184,62 @@ def calendar_events():
     events = []
     
     # Add chore completions as events
-    for completion_id, completion in data["chore_completions"].items():
-        chore = data["chores"].get(completion["chore_id"])
-        if not chore or chore["family_id"] != family["id"]:
-            continue
-        
+    completions = ChoreCompletion.query.join(Chore).filter(Chore.family_id == family.id).all()
+    
+    for completion in completions:
         # For children, only show their own completions
-        if not is_parent and completion["user_id"] != user["id"]:
+        if not is_parent and completion.user_id != user.id:
             continue
             
-        child = data["users"].get(completion["user_id"])
-        if not child:
+        child = User.query.get(completion.user_id)
+        chore = Chore.query.get(completion.chore_id)
+        if not child or not chore:
             continue
             
         events.append({
-            "id": completion["id"],
-            "title": f"{child['username']}: {chore['name']}",
-            "start": completion["date"],
-            "end": completion["date"],
+            "id": completion.id,
+            "title": f"{child.username}: {chore.name}",
+            "start": completion.date.isoformat(),
+            "end": completion.date.isoformat(),
             "allDay": True,
             "color": "#28a745",  # Green for completions
             "extendedProps": {
                 "type": "completion",
-                "chore_id": chore["id"],
-                "user_id": child["id"],
-                "time_spent": completion["time_spent_minutes"],
-                "amount_earned": completion["amount_earned"]
+                "chore_id": chore.id,
+                "user_id": child.id,
+                "time_spent": completion.time_spent_minutes,
+                "amount_earned": completion.amount_earned
             }
         })
     
     # Add behavior records as events
-    for record_id, record in data["behavior_records"].items():
-        if record["family_id"] != family["id"]:
-            continue
-        
+    behavior_records = BehaviorRecord.query.filter_by(family_id=family.id).all()
+    
+    for record in behavior_records:
         # For children, only show their own behavior records
-        if not is_parent and record["user_id"] != user["id"]:
+        if not is_parent and record.user_id != user.id:
             continue
             
-        child = data["users"].get(record["user_id"])
+        child = User.query.get(record.user_id)
         if not child:
             continue
             
-        color = "#17a2b8" if record["is_positive"] else "#dc3545"  # Blue for positive, red for negative
-        prefix = "+" if record["is_positive"] else "-"
+        color = "#17a2b8" if record.is_positive else "#dc3545"  # Blue for positive, red for negative
+        prefix = "+" if record.is_positive else "-"
         
         events.append({
-            "id": record["id"],
-            "title": f"{child['username']}: {prefix}${record['amount']}",
-            "start": record["date"],
-            "end": record["date"],
+            "id": record.id,
+            "title": f"{child.username}: {prefix}${record.amount}",
+            "start": record.date.isoformat(),
+            "end": record.date.isoformat(),
             "allDay": True,
             "color": color,
             "extendedProps": {
                 "type": "behavior",
-                "user_id": child["id"],
-                "description": record["description"],
-                "amount": record["amount"],
-                "is_positive": record["is_positive"]
+                "user_id": child.id,
+                "description": record.description,
+                "amount": record.amount,
+                "is_positive": record.is_positive
             }
         })
     
