@@ -1154,6 +1154,7 @@ def calendar():
     family = data["families"].get(user["family_id"])
     is_parent = user["role"] == "parent"
     
+
     # Get all children in the family for filtering
     children = []
     for child_id in family["child_ids"]:
