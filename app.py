@@ -1163,12 +1163,31 @@ def calendar():
             "name": child.username
         })
     
+    # Get active chores for the family
+    family_chores = []
+    chores_query = Chore.query.filter_by(family_id=family.id, status="active").all()
+    for chore in chores_query:
+        assigned_to_name = "Unassigned"
+        if chore.assigned_to:
+            assigned_child = User.query.get(chore.assigned_to)
+            if assigned_child:
+                assigned_to_name = assigned_child.username
+        
+        family_chores.append({
+            "id": chore.id,
+            "name": chore.name,
+            "estimated_time_minutes": chore.estimated_time_minutes,
+            "assigned_to": chore.assigned_to,
+            "assigned_to_name": assigned_to_name
+        })
+    
     return render_template(
         "calendar.html",
         user=user,
         family=family,
         is_parent=is_parent,
-        children=children
+        children=children,
+        chores=family_chores
     )
 
 @app.route("/api/calendar-events")

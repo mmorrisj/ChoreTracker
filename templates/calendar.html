@@ -127,20 +127,14 @@
                 <h5 class="modal-title">Add Chore Completion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('complete_chore', chore_id='placeholder') }}" method="post">
+            <form action="{{ url_for('complete_chore', chore_id=1) }}" method="post" id="calendarChoreForm">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="calendarChoreId" class="form-label">Chore</label>
                         <select class="form-select" id="calendarChoreId" name="chore_id" required>
-                            {% for chore_id, chore in data['chores'].items() %}
-                                {% if chore['family_id'] == family['id'] and chore['status'] == 'active' %}
-                                <option value="{{ chore_id }}" data-time="{{ chore['estimated_time_minutes'] }}" data-child="{{ chore['assigned_to'] or '' }}">
-                                    {{ chore['name'] }}
-                                </option>
-                                {% endif %}
-                            {% endfor %}
+                            <!-- Will be populated by JavaScript -->
                         </select>
-                    </div>
+                    </div></div>
                     
                     <div class="mb-3">
                         <label for="calendarChildId" class="form-label">Child</label>
@@ -260,17 +254,39 @@
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
 <script>
-    // Auto-populate child dropdown based on chore selection
+    // Populate chore dropdown and handle form updates
     document.addEventListener('DOMContentLoaded', function() {
         const choreSelect = document.getElementById('calendarChoreId');
         const childSelect = document.getElementById('calendarChildId');
         const timeInput = document.getElementById('calendarTimeSpent');
+        const choreForm = document.getElementById('calendarChoreForm');
         
-        if (choreSelect && childSelect && timeInput) {
+        // Populate chore dropdown
+        if (choreSelect) {
+            const chores = {{ chores | tojson }};
+            choreSelect.innerHTML = '<option value="">Select a chore...</option>';
+            
+            chores.forEach(chore => {
+                const option = document.createElement('option');
+                option.value = chore.id;
+                option.textContent = chore.name;
+                option.dataset.time = chore.estimated_time_minutes;
+                option.dataset.child = chore.assigned_to || '';
+                choreSelect.appendChild(option);
+            });
+        }
+        
+        if (choreSelect && childSelect && timeInput && choreForm) {
             choreSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
                 const assignedChildId = selectedOption.dataset.child;
                 const estimatedTime = selectedOption.dataset.time;
+                const choreId = this.value;
+                
+                // Update form action URL
+                if (choreId) {
+                    choreForm.action = `/chores/${choreId}/complete`;
+                }
                 
                 if (assignedChildId && childSelect) {
                     for (let i = 0; i < childSelect.options.length; i++) {
@@ -285,9 +301,6 @@
                     timeInput.value = estimatedTime;
                 }
             });
-            
-            // Trigger the change event to set initial values
-            choreSelect.dispatchEvent(new Event('change'));
         }
         
         // Set default dates for the calendar modals
