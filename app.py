@@ -52,10 +52,10 @@ def sync_daily_chores_from_config():
     """Sync daily chores from config file to database"""
     from models import DailyChore
     config = load_daily_chores_config()
-    
+
     for chore_config in config.get('daily_chores', []):
         existing_chore = DailyChore.query.filter_by(name=chore_config['name']).first()
-        
+
         if existing_chore:
             # Update existing chore
             existing_chore.description = chore_config.get('description', '')
@@ -74,7 +74,7 @@ def sync_daily_chores_from_config():
                 streak_threshold=chore_config['streak_threshold']
             )
             db.session.add(new_chore)
-    
+
     db.session.commit()
 
 def calculate_streak_for_user_chore(user_id, daily_chore_id, completion_date):
@@ -87,14 +87,14 @@ def calculate_streak_for_user_chore(user_id, daily_chore_id, completion_date):
     ).filter(
         DailyChoreCompletion.date <= completion_date
     ).order_by(DailyChoreCompletion.date.desc()).all()
-    
+
     if not completions:
         return 1
-    
+
     # Check for consecutive days
     streak = 1
     current_date = completion_date
-    
+
     for completion in completions:
         expected_date = current_date - datetime.timedelta(days=1)
         if completion.date == expected_date:
@@ -106,27 +106,27 @@ def calculate_streak_for_user_chore(user_id, daily_chore_id, completion_date):
         else:
             # Gap in streak
             break
-    
+
     return streak
 
 def calculate_streak_earnings(daily_chore, streak_count):
     """Calculate earnings based on streak count"""
     config = load_daily_chores_config()
-    
+
     # Calculate base earnings with streak multiplier
     streak_multiplier = (streak_count - 1) // daily_chore.streak_threshold
     earnings = daily_chore.base_amount + (streak_multiplier * daily_chore.streak_increment)
-    
+
     # Cap at maximum amount
     earnings = min(earnings, daily_chore.max_amount)
-    
+
     # Check for streak bonuses
     bonus = 0.0
     for bonus_config in config.get('streak_bonuses', []):
         if streak_count == bonus_config['days']:
             bonus = bonus_config['bonus']
             break
-    
+
     return earnings, bonus
 
 # Load user for Flask-Login
@@ -146,7 +146,7 @@ def init_db():
     """Initialize database tables and create initial data if needed."""
     # Create tables if they don't exist
     db.create_all()
-    
+
     # Check if there are any users in the database
     if User.query.count() == 0:
         # Create a demo family
@@ -156,7 +156,7 @@ def init_db():
         )
         db.session.add(demo_family)
         db.session.commit()  # Commit to get the ID
-        
+
         # Create demo parent user
         parent = User(
             username="parent",
@@ -165,7 +165,7 @@ def init_db():
             family_id=demo_family.id
         )
         db.session.add(parent)
-        
+
         # Create demo child users
         emma = User(
             username="emma",
@@ -174,7 +174,7 @@ def init_db():
             family_id=demo_family.id
         )
         db.session.add(emma)
-        
+
         noah = User(
             username="noah",
             password_hash=generate_password_hash("password"),
@@ -183,7 +183,7 @@ def init_db():
         )
         db.session.add(noah)
         db.session.commit()  # Commit to get IDs
-        
+
         # Add some default chores
         chore1 = Chore(
             family_id=demo_family.id,
@@ -195,7 +195,7 @@ def init_db():
             status="active"
         )
         db.session.add(chore1)
-        
+
         chore2 = Chore(
             family_id=demo_family.id,
             name="Vacuum living room",
@@ -206,7 +206,7 @@ def init_db():
             status="active"
         )
         db.session.add(chore2)
-        
+
         chore3 = Chore(
             family_id=demo_family.id,
             name="Take out trash",
@@ -217,7 +217,7 @@ def init_db():
             status="active"
         )
         db.session.add(chore3)
-        
+
         # Add some goals
         goal1 = Goal(
             family_id=demo_family.id,
@@ -229,7 +229,7 @@ def init_db():
             is_family_goal=False
         )
         db.session.add(goal1)
-        
+
         goal2 = Goal(
             family_id=demo_family.id,
             user_id=noah.id,
@@ -240,7 +240,7 @@ def init_db():
             is_family_goal=False
         )
         db.session.add(goal2)
-        
+
         goal3 = Goal(
             family_id=demo_family.id,
             name="Family movie night",
@@ -250,7 +250,7 @@ def init_db():
             is_family_goal=True
         )
         db.session.add(goal3)
-        
+
         # Add some behavior records
         behavior1 = BehaviorRecord(
             family_id=demo_family.id,
@@ -261,7 +261,7 @@ def init_db():
             is_positive=True
         )
         db.session.add(behavior1)
-        
+
         behavior2 = BehaviorRecord(
             family_id=demo_family.id,
             user_id=noah.id,
@@ -271,7 +271,7 @@ def init_db():
             is_positive=True
         )
         db.session.add(behavior2)
-        
+
         # Add some chore completions
         yesterday = datetime.date.today() - datetime.timedelta(days=1)
         completion1 = ChoreCompletion(
@@ -283,7 +283,7 @@ def init_db():
             status="completed"
         )
         db.session.add(completion1)
-        
+
         completion2 = ChoreCompletion(
             chore_id=3,
             user_id=emma.id,
@@ -293,7 +293,7 @@ def init_db():
             status="completed"
         )
         db.session.add(completion2)
-        
+
         # Commit all changes
         db.session.commit()
 
@@ -316,12 +316,12 @@ def inject_utilities():
 # Helper function to calculate earnings
 def calculate_child_earnings(child_id):
     total_earnings = 0
-    
+
     # Add earnings from chores
     completions = ChoreCompletion.query.filter_by(user_id=child_id).all()
     for completion in completions:
         total_earnings += completion.amount_earned
-    
+
     # Add earnings from behavior (positive and negative)
     behaviors = BehaviorRecord.query.filter_by(user_id=child_id).all()
     for behavior in behaviors:
@@ -329,7 +329,7 @@ def calculate_child_earnings(child_id):
             total_earnings += behavior.amount
         else:
             total_earnings -= behavior.amount
-    
+
     return total_earnings
 
 # Authentication check
@@ -347,7 +347,7 @@ def parent_required(f):
         if not current_user.is_authenticated:
             flash("Please log in to access this page", "warning")
             return redirect(url_for("login"))
-        
+
         if current_user.role != "parent":
             flash("This action requires parent permissions", "danger")
             return redirect(url_for("dashboard"))
@@ -366,20 +366,20 @@ def index():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
-        
+
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        
+
         user = User.query.filter_by(username=username).first()
-        
+
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             flash(f"Welcome back, {username}!", "success")
             return redirect(url_for("dashboard"))
         else:
             flash("Invalid username or password", "danger")
-    
+
     return render_template("login.html")
 
 @app.route("/logout")
@@ -395,10 +395,10 @@ def dashboard():
     # Get current user and family information
     user = current_user
     family = user.family
-    
+
     # Get the user's role (parent or child)
     is_parent = user.role == "parent"
-    
+
     # If parent, get all children in the family
     children = []
     if is_parent:
@@ -407,7 +407,7 @@ def dashboard():
             family_id=family.id, 
             role="child"
         ).all()
-        
+
         for child in family_children:
             child_data = {
                 "id": child.id,
@@ -415,16 +415,16 @@ def dashboard():
                 "earnings": calculate_child_earnings(child.id),
                 "goals": []
             }
-            
+
             # Get this child's goals
             child_goals = Goal.query.filter_by(
                 family_id=family.id,
                 user_id=child.id
             ).all()
-            
+
             # Calculate child's total earnings once
             total_child_earnings = calculate_child_earnings(child.id)
-            
+
             # Store goals with their progress
             child_goals_data = []
             for goal in child_goals:
@@ -432,7 +432,7 @@ def dashboard():
                 goal_progress = (total_child_earnings / goal.amount) * 100 if goal.amount > 0 else 0
                 # Cap progress at 100%
                 capped_progress = min(goal_progress, 100)
-                
+
                 child_goals_data.append({
                     "id": goal.id,
                     "name": goal.name,
@@ -441,37 +441,37 @@ def dashboard():
                     "amount": goal.amount,
                     "proportion": f"{(goal.amount / total_child_earnings * 100):.1f}%" if total_child_earnings > 0 else "N/A"
                 })
-            
+
             # Sort goals by progress in descending order (highest completion first)
             child_goals_data.sort(key=lambda x: x["progress"], reverse=True)
-            
+
             # Store sorted goals in child data
             child_data["goals"] = child_goals_data
-            
+
             children.append(child_data)
-    
+
     # Get family goals
     family_goals = []
     family_goal_records = Goal.query.filter_by(
         family_id=family.id,
         is_family_goal=True
     ).all()
-    
+
     # Calculate total family earnings for family goals
     family_children = User.query.filter_by(
         family_id=family.id,
         role="child"
     ).all()
-    
+
     total_family_earnings = 0
     for child in family_children:
         total_family_earnings += calculate_child_earnings(child.id)
-    
+
     for goal in family_goal_records:
         # Calculate effective current amount accounting for resets
         effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
         goal.current_amount = effective_current_amount
-        
+
         goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         family_goals.append({
             "id": goal.id,
@@ -480,18 +480,18 @@ def dashboard():
             "current_amount": goal.current_amount,
             "amount": goal.amount
         })
-    
+
     # Get recent chore completions
     # First get all chores belonging to the family
     family_chores = Chore.query.filter_by(family_id=family.id).all()
     chore_ids = [chore.id for chore in family_chores]
-    
+
     recent_completions = []
     if chore_ids:  # Only query if there are chores
         completions = ChoreCompletion.query.filter(
             ChoreCompletion.chore_id.in_(chore_ids)
         ).order_by(ChoreCompletion.date.desc()).limit(5).all()
-        
+
         for completion in completions:
             chore = Chore.query.get(completion.chore_id)
             child = User.query.get(completion.user_id)
@@ -503,12 +503,12 @@ def dashboard():
                     "date": completion.date.strftime("%Y-%m-%d"),
                     "amount_earned": completion.amount_earned
                 })
-    
+
     # If user is a child, get their specific data
     if not is_parent:
         child_id = user.id
         earnings = calculate_child_earnings(child_id)
-        
+
         # Get child's goals
         my_goals = []
         child_goals = Goal.query.filter_by(
@@ -516,7 +516,7 @@ def dashboard():
             user_id=child_id,
             is_family_goal=False
         ).all()
-        
+
         for goal in child_goals:
             goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
             my_goals.append({
@@ -526,14 +526,14 @@ def dashboard():
                 "current_amount": goal.current_amount,
                 "amount": goal.amount
             })
-        
+
         # Get child's assigned chores
         my_chores = []
         child_chores = Chore.query.filter_by(
             family_id=family.id,
             assigned_to=child_id
         ).all()
-        
+
         for chore in child_chores:
             my_chores.append({
                 "id": chore.id,
@@ -542,7 +542,7 @@ def dashboard():
                 "estimated_time_minutes": chore.estimated_time_minutes,
                 "frequency": chore.frequency
             })
-        
+
         return render_template(
             "dashboard.html", 
             user=user,
@@ -554,7 +554,7 @@ def dashboard():
             my_chores=my_chores,
             recent_completions=recent_completions
         )
-    
+
     return render_template(
         "dashboard.html", 
         user=user,
@@ -571,11 +571,11 @@ def chores():
     user = current_user
     family = user.family
     is_parent = user.role == "parent"
-    
+
     # Get chores from database
     family_chores = []
     chores_query = Chore.query.filter_by(family_id=family.id).all()
-    
+
     for chore in chores_query:
         # Get the assigned child's name
         assigned_to_name = "Unassigned"
@@ -583,7 +583,7 @@ def chores():
             assigned_child = User.query.get(chore.assigned_to)
             if assigned_child:
                 assigned_to_name = assigned_child.username
-        
+
         family_chores.append({
             "id": chore.id,
             "name": chore.name,
@@ -594,7 +594,7 @@ def chores():
             "frequency": chore.frequency,
             "status": chore.status
         })
-    
+
     # If parent, get list of children for assignment dropdown
     children = []
     if is_parent:
@@ -604,7 +604,7 @@ def chores():
                 "id": child.id,
                 "name": child.username
             })
-    
+
     return render_template(
         "chores.html",
         user=user,
@@ -619,17 +619,17 @@ def chores():
 def add_chore():
     user = current_user
     family_id = user.family_id
-    
+
     name = request.form.get("name")
     description = request.form.get("description", "")
     estimated_time = request.form.get("estimated_time", 0, type=int)
     assigned_to = request.form.get("assigned_to", "")
     frequency = request.form.get("frequency", "daily")
-    
+
     if not name:
         flash("Chore name is required", "danger")
         return redirect(url_for("chores"))
-    
+
     # Create the new chore in the database
     new_chore = Chore(
         family_id=family_id,
@@ -640,10 +640,10 @@ def add_chore():
         frequency=frequency,
         status="active"
     )
-    
+
     db.session.add(new_chore)
     db.session.commit()
-    
+
     flash(f"Chore '{name}' added successfully", "success")
     return redirect(url_for("chores"))
 
@@ -654,14 +654,14 @@ def edit_chore(chore_id):
     if chore.family_id != current_user.family_id:
         flash("You don't have permission to edit this chore", "danger")
         return redirect(url_for("chores"))
-    
+
     chore.name = request.form.get("name", chore.name)
     chore.description = request.form.get("description", chore.description)
     chore.estimated_time_minutes = request.form.get("estimated_time", chore.estimated_time_minutes, type=int)
     chore.assigned_to = request.form.get("assigned_to") or None
     chore.frequency = request.form.get("frequency", chore.frequency)
     chore.status = request.form.get("status", chore.status)
-    
+
     db.session.commit()
     flash("Chore updated successfully", "success")
     return redirect(url_for("chores"))
@@ -673,14 +673,14 @@ def delete_chore(chore_id):
     if chore.family_id != current_user.family_id:
         flash("You don't have permission to delete this chore", "danger")
         return redirect(url_for("chores"))
-    
+
     # Delete any completions for this chore
     ChoreCompletion.query.filter_by(chore_id=chore_id).delete()
-    
+
     # Delete the chore
     db.session.delete(chore)
     db.session.commit()
-    
+
     flash("Chore deleted successfully", "success")
     return redirect(url_for("chores"))
 
@@ -689,19 +689,19 @@ def delete_chore(chore_id):
 def complete_chore(chore_id):
     user = current_user
     chore = Chore.query.get_or_404(chore_id)
-    
+
     if chore.family_id != user.family_id:
         flash("You don't have permission to complete this chore", "danger")
         return redirect(url_for("dashboard"))
-    
+
     # Check if the user is allowed to complete this chore
     is_parent = user.role == "parent"
     is_assigned = chore.assigned_to == user.id
-    
+
     if not (is_parent or is_assigned):
         flash("You are not authorized to complete this chore", "danger")
         return redirect(url_for("dashboard"))
-    
+
     # Get completion details
     time_spent = request.form.get("time_spent", chore.estimated_time_minutes, type=int)
     completion_date = request.form.get("completion_date")
@@ -712,24 +712,24 @@ def complete_chore(chore_id):
             completion_date = datetime.date.today()
     else:
         completion_date = datetime.date.today()
-        
+
     # Get child_id from form - could be from hidden input or from the select dropdown
     child_id = request.form.get("child_id")
     child_id_select = request.form.get("child_id_select")
-    
+
     # Use the dropdown selection value if it exists (for unassigned chores)
     if child_id_select:
         child_id = child_id_select
-    
+
     # If still no child_id, fallback to current user (if child) or assigned user
     if not child_id:
         child_id = user.id if not is_parent else chore.assigned_to
-    
+
     # Calculate earnings based on the hourly rate
     family = user.family
     hourly_rate = family.hourly_rate
     amount_earned = round((time_spent / 60) * hourly_rate, 2)
-    
+
     # Create new completion record
     completion = ChoreCompletion(
         chore_id=chore.id,
@@ -739,10 +739,10 @@ def complete_chore(chore_id):
         amount_earned=amount_earned,
         status="completed"
     )
-    
+
     db.session.add(completion)
     db.session.commit()
-    
+
     flash(f"Chore completed! Earned ${amount_earned:.2f}", "success")
     return redirect(url_for("dashboard"))
 
@@ -752,29 +752,29 @@ def goals():
     user = current_user
     family = user.family
     is_parent = user.role == "parent"
-    
+
     # Get individual goals
     individual_goals = []
     individual_goal_records = Goal.query.filter_by(
         family_id=family.id, 
         is_family_goal=False
     ).all()
-    
+
     for goal in individual_goal_records:
         goal_owner = User.query.get(goal.user_id)
         if goal_owner:
             # Get the child's total earnings
             total_child_earnings = calculate_child_earnings(goal_owner.id)
-            
+
             # For individual goals, we'll show proportion of total earnings
             # We're using the total child's earnings as the current_amount instead
             # of the specific goal's current_amount
             goal_progress = (total_child_earnings / goal.amount) * 100 if goal.amount > 0 else 0
-            
+
             # For children, only show their own goals
             if not is_parent and goal.user_id != user.id:
                 continue
-                
+
             goal_data = {
                 "id": goal.id,
                 "name": goal.name,
@@ -787,32 +787,32 @@ def goals():
                 "total_earnings": total_child_earnings,
                 "proportion": f"{(goal.amount / total_child_earnings * 100):.1f}%" if total_child_earnings > 0 else "N/A"
             }
-            
+
             individual_goals.append(goal_data)
-    
+
     # Get family goals
     family_goals = []
     family_goal_records = Goal.query.filter_by(
         family_id=family.id,
         is_family_goal=True
     ).all()
-    
+
     # Calculate total family earnings (sum of all children's earnings)
     family_children = User.query.filter_by(
         family_id=family.id,
         role="child"
     ).all()
-    
+
     total_family_earnings = 0
     for child in family_children:
         total_family_earnings += calculate_child_earnings(child.id)
-    
+
     for goal in family_goal_records:
         # Calculate the effective current amount (total earnings minus any reset amount)
         effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
         goal.current_amount = effective_current_amount
         db.session.commit()
-        
+
         goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         goal_data = {
             "id": goal.id,
@@ -823,7 +823,10 @@ def goals():
             "progress": goal_progress
         }
         family_goals.append(goal_data)
-    
+
+    # Commit any family goal current_amount updates
+    db.session.commit()
+
     # If parent, get list of children for goal creation
     children = []
     if is_parent:
@@ -831,13 +834,13 @@ def goals():
             family_id=family.id,
             role="child"
         ).all()
-        
+
         for child in family_children:
             children.append({
                 "id": child.id,
                 "name": child.username
             })
-    
+
     return render_template(
         "goals.html",
         user=user,
@@ -853,21 +856,21 @@ def goals():
 def add_goal():
     user = current_user
     family_id = user.family_id
-    
+
     name = request.form.get("name")
     description = request.form.get("description", "")
     amount = request.form.get("amount", 0, type=float)
     goal_type = request.form.get("goal_type")
     user_id = request.form.get("user_id") if goal_type == "individual" else None
-    
+
     if not name:
         flash("Goal name is required", "danger")
         return redirect(url_for("goals"))
-    
+
     if amount <= 0:
         flash("Goal amount must be greater than zero", "danger")
         return redirect(url_for("goals"))
-    
+
     # Create a new goal in the database
     new_goal = Goal(
         family_id=family_id,
@@ -878,10 +881,10 @@ def add_goal():
         current_amount=0,
         is_family_goal=(goal_type == "family")
     )
-    
+
     db.session.add(new_goal)
     db.session.commit()
-    
+
     flash(f"Goal '{name}' added successfully", "success")
     return redirect(url_for("goals"))
 
@@ -893,16 +896,17 @@ def edit_goal(goal_id):
     if goal.family_id != current_user.family_id:
         flash("You don't have permission to edit this goal", "danger")
         return redirect(url_for("goals"))
-    
+
     goal.name = request.form.get("name", goal.name)
     goal.description = request.form.get("description", goal.description)
     goal.amount = request.form.get("amount", goal.amount, type=float)
     goal.current_amount = request.form.get("current_amount", goal.current_amount, type=float)
-    
+
     # Ensure current amount doesn't exceed the goal amount
     if goal.current_amount > goal.amount:
-        goal.current_amount = goal.amount
-    
+        goal.current_amount =```python
+ goal.amount
+
     db.session.commit()
     flash("Goal updated successfully", "success")
     return redirect(url_for("goals"))
@@ -911,16 +915,16 @@ def edit_goal(goal_id):
 @parent_required
 def delete_goal(goal_id):
     goal = Goal.query.get_or_404(goal_id)
-    
+
     # Check if the goal belongs to the user's family
     if goal.family_id != current_user.family_id:
         flash("You don't have permission to delete this goal", "danger")
         return redirect(url_for("goals"))
-    
+
     # Delete the goal
     db.session.delete(goal)
     db.session.commit()
-    
+
     flash("Goal deleted successfully", "success")
     return redirect(url_for("goals"))
 
@@ -928,31 +932,31 @@ def delete_goal(goal_id):
 @parent_required
 def reset_goal(goal_id):
     goal = Goal.query.get_or_404(goal_id)
-    
+
     # Check if the goal belongs to the user's family
     if goal.family_id != current_user.family_id:
         flash("You don't have permission to reset this goal", "danger")
         return redirect(url_for("goals"))
-    
+
     if goal.is_family_goal:
         # For family goals, set reset_amount to current total family earnings
         family_children = User.query.filter_by(
             family_id=goal.family_id,
             role="child"
         ).all()
-        
+
         total_family_earnings = 0
         for child in family_children:
             total_family_earnings += calculate_child_earnings(child.id)
-        
+
         goal.reset_amount = total_family_earnings
         goal.current_amount = 0.0
     else:
         # For individual goals, just reset current amount
         goal.current_amount = 0.0
-    
+
     db.session.commit()
-    
+
     flash(f"Goal '{goal.name}' progress has been reset to $0.00", "success")
     return redirect(url_for("goals"))
 
@@ -960,52 +964,52 @@ def reset_goal(goal_id):
 @parent_required
 def contribute_to_goal(goal_id):
     goal = Goal.query.get_or_404(goal_id)
-    
+
     # Check if the goal belongs to the user's family
     if goal.family_id != current_user.family_id:
         flash("You don't have permission to contribute to this goal", "danger")
         return redirect(url_for("goals"))
-    
+
     amount = request.form.get("amount", 0, type=float)
     if amount <= 0:
         flash("Contribution amount must be greater than zero", "danger")
         return redirect(url_for("goals"))
-    
+
     # For personal goals, add the contribution directly
     if not goal.is_family_goal:
         # Add the contribution amount
         goal.current_amount += amount
-        
+
         # Check if goal is now complete
         if goal.current_amount >= goal.amount:
             goal.current_amount = goal.amount
             flash(f"Congratulations! Goal '{goal.name}' has been fully funded!", "success")
         else:
             flash(f"Successfully contributed ${amount:.2f} to '{goal.name}'", "success")
-        
+
         db.session.commit()
     else:
         # For family goals, we don't manually adjust the amount since it's calculated
         # from the total children's earnings. Instead, just display a message.
         flash(f"Family goals are automatically funded based on children's earnings.", "info")
-    
+
     return redirect(url_for("goals"))
 
 @app.route("/goals/<int:goal_id>/apply-reward", methods=["POST"])
 @parent_required
 def apply_reward(goal_id):
     goal = Goal.query.get_or_404(goal_id)
-    
+
     # Check if the goal belongs to the user's family
     if goal.family_id != current_user.family_id:
         flash("You don't have permission to apply rewards for this goal", "danger")
         return redirect(url_for("goals"))
-    
+
     # Check if goal is complete
     if goal.current_amount < goal.amount:
         flash("This goal hasn't been fully funded yet", "warning")
         return redirect(url_for("goals"))
-    
+
     # Create a negative behavior record to deduct the amount
     # This effectively "spends" the money that was saved for the goal
     deduction = BehaviorRecord(
@@ -1016,12 +1020,12 @@ def apply_reward(goal_id):
         amount=goal.amount,
         is_positive=False
     )
-    
+
     db.session.add(deduction)
-    
+
     # Reset the goal amount to 0
     goal.current_amount = 0
-    
+
     db.session.commit()
     flash(f"Reward for '{goal.name}' has been applied! ${goal.amount:.2f} has been deducted from the child's earnings.", "success")
     return redirect(url_for("goals"))
@@ -1032,7 +1036,7 @@ def behavior():
     user = current_user
     family = user.family
     is_parent = user.role == "parent"
-    
+
     # Get behavior records from database
     if is_parent:
         # Parents can see all family behavior records
@@ -1040,7 +1044,7 @@ def behavior():
     else:
         # Children can only see their own records
         records_query = BehaviorRecord.query.filter_by(family_id=family.id, user_id=user.id).order_by(BehaviorRecord.date.desc())
-    
+
     # Build behavior records with user information
     behavior_records = []
     for record in records_query:
@@ -1056,7 +1060,7 @@ def behavior():
                 "child_id": child.id
             }
             behavior_records.append(record_data)
-    
+
     # If parent, get list of children for behavior record creation
     children = []
     if is_parent:
@@ -1066,7 +1070,7 @@ def behavior():
                 "id": child.id,
                 "name": child.username
             })
-    
+
     return render_template(
         "behavior.html",
         user=user,
@@ -1081,37 +1085,37 @@ def behavior():
 def add_behavior():
     user = current_user
     family_id = user.family_id
-    
+
     description = request.form.get("description")
     amount = request.form.get("amount", 0, type=float)
     behavior_type = request.form.get("behavior_type")
     user_id = request.form.get("user_id")
     date_str = request.form.get("date", datetime.datetime.now().strftime("%Y-%m-%d"))
-    
+
     if not description:
         flash("Behavior description is required", "danger")
         return redirect(url_for("behavior"))
-    
+
     if amount <= 0:
         flash("Amount must be greater than zero", "danger")
         return redirect(url_for("behavior"))
-    
+
     if not user_id:
         flash("Child must be selected", "danger")
         return redirect(url_for("behavior"))
-    
+
     # Convert the date string to a Python date object
     try:
         date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
     except ValueError:
         date_obj = datetime.date.today()
-    
+
     # Create new behavior record in the database
     child = User.query.get(user_id)
     if not child:
         flash("Selected child not found", "danger")
         return redirect(url_for("behavior"))
-    
+
     new_record = BehaviorRecord(
         family_id=family_id,
         user_id=int(user_id),
@@ -1120,10 +1124,10 @@ def add_behavior():
         amount=amount,
         is_positive=(behavior_type == "positive")
     )
-    
+
     db.session.add(new_record)
     db.session.commit()
-    
+
     action = "awarded to" if behavior_type == "positive" else "deducted from"
     flash(f"${amount:.2f} {action} {child.username} for {description}", "success")
     return redirect(url_for("behavior"))
@@ -1132,32 +1136,32 @@ def add_behavior():
 @parent_required
 def edit_behavior(record_id):
     record = BehaviorRecord.query.get_or_404(record_id)
-    
+
     # Ensure the record belongs to the current user's family
     if record.family_id != current_user.family_id:
         flash("You don't have permission to edit this record", "danger")
         return redirect(url_for("behavior"))
-    
+
     description = request.form.get("description")
     amount = request.form.get("amount", 0, type=float)
     date_str = request.form.get("date")
     behavior_type = request.form.get("behavior_type")
-    
+
     if description:
         record.description = description
-    
+
     if amount > 0:
         record.amount = amount
-    
+
     if date_str:
         try:
             record.date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
             # If date format is invalid, keep the current date
             pass
-    
+
     record.is_positive = (behavior_type == "positive")
-    
+
     db.session.commit()
     flash("Behavior record updated successfully", "success")
     return redirect(url_for("behavior"))
@@ -1166,12 +1170,12 @@ def edit_behavior(record_id):
 @parent_required
 def delete_behavior(record_id):
     record = BehaviorRecord.query.get_or_404(record_id)
-    
+
     # Ensure the record belongs to the current user's family
     if record.family_id != current_user.family_id:
         flash("You don't have permission to delete this record", "danger")
         return redirect(url_for("behavior"))
-    
+
     db.session.delete(record)
     db.session.commit()
     flash("Behavior record deleted successfully", "success")
@@ -1183,7 +1187,7 @@ def calendar():
     user = current_user
     family = user.family
     is_parent = user.role == "parent"
-    
+
     # Get all children in the family for filtering
     children = []
     family_children = User.query.filter_by(family_id=family.id, role="child").all()
@@ -1192,7 +1196,7 @@ def calendar():
             "id": child.id,
             "name": child.username
         })
-    
+
     # Get active chores for the family
     family_chores = []
     chores_query = Chore.query.filter_by(family_id=family.id, status="active").all()
@@ -1202,7 +1206,7 @@ def calendar():
             assigned_child = User.query.get(chore.assigned_to)
             if assigned_child:
                 assigned_to_name = assigned_child.username
-        
+
         family_chores.append({
             "id": chore.id,
             "name": chore.name,
@@ -1210,7 +1214,7 @@ def calendar():
             "assigned_to": chore.assigned_to,
             "assigned_to_name": assigned_to_name
         })
-    
+
     return render_template(
         "calendar.html",
         user=user,
@@ -1226,25 +1230,25 @@ def calendar_events():
     user = current_user
     family = user.family
     is_parent = user.role == "parent"
-    
+
     start_date = request.args.get("start")
     end_date = request.args.get("end")
-    
+
     events = []
-    
+
     # Add chore completions as events
     completions = ChoreCompletion.query.join(Chore).filter(Chore.family_id == family.id).all()
-    
+
     for completion in completions:
         # For children, only show their own completions
         if not is_parent and completion.user_id != user.id:
             continue
-            
+
         child = User.query.get(completion.user_id)
         chore = Chore.query.get(completion.chore_id)
         if not child or not chore:
             continue
-            
+
         events.append({
             "id": completion.id,
             "title": f"{child.username}: {chore.name}",
@@ -1260,22 +1264,22 @@ def calendar_events():
                 "amount_earned": completion.amount_earned
             }
         })
-    
+
     # Add behavior records as events
     behavior_records = BehaviorRecord.query.filter_by(family_id=family.id).all()
-    
+
     for record in behavior_records:
         # For children, only show their own behavior records
         if not is_parent and record.user_id != user.id:
             continue
-            
+
         child = User.query.get(record.user_id)
         if not child:
             continue
-            
+
         color = "#17a2b8" if record.is_positive else "#dc3545"  # Blue for positive, red for negative
         prefix = "+" if record.is_positive else "-"
-        
+
         events.append({
             "id": record.id,
             "title": f"{child.username}: {prefix}${record.amount}",
@@ -1291,7 +1295,7 @@ def calendar_events():
                 "is_positive": record.is_positive
             }
         })
-    
+
     return jsonify(events)
 
 @app.route("/settings")
@@ -1300,24 +1304,24 @@ def settings():
     user = current_user
     family = user.family
     is_parent = user.role == "parent"
-    
+
     if not is_parent:
         flash("Only parents can access settings", "warning")
         return redirect(url_for("dashboard"))
-    
+
     # Get all family members
     family_members = User.query.filter_by(family_id=family.id).all()
-    
+
     # Separate parents and children
     parents = [member for member in family_members if member.role == "parent"]
     children = [member for member in family_members if member.role == "child"]
-    
+
     # Get app statistics
     chore_count = Chore.query.filter_by(family_id=family.id).count()
     goal_count = Goal.query.filter_by(family_id=family.id).count()
     completion_count = ChoreCompletion.query.join(Chore).filter(Chore.family_id == family.id).count()
     behavior_count = BehaviorRecord.query.filter_by(family_id=family.id).count()
-    
+
     return render_template(
         "settings.html",
         user=user,
@@ -1335,17 +1339,17 @@ def settings():
 def update_settings():
     user = current_user
     family = user.family
-    
+
     family_name = request.form.get("family_name", family.name)
     hourly_rate = request.form.get("hourly_rate", DEFAULT_HOURLY_RATE, type=float)
-    
+
     if hourly_rate <= 0:
         flash("Hourly rate must be greater than zero", "danger")
         return redirect(url_for("settings"))
-    
+
     family.name = family_name
     family.hourly_rate = hourly_rate
-    
+
     db.session.commit()
     flash("Settings updated successfully", "success")
     return redirect(url_for("settings"))
@@ -1356,17 +1360,17 @@ def add_family_member():
     username = request.form.get("username")
     password = request.form.get("password")
     role = request.form.get("role", "child")  # Default to child if not specified
-    
+
     # Validate input
     if not username or not password:
         flash("Username and password are required", "danger")
         return redirect(url_for("settings"))
-    
+
     # Check if username already exists
     if User.query.filter_by(username=username).first():
         flash(f"Username '{username}' already exists", "danger")
         return redirect(url_for("settings"))
-    
+
     # Create the new user
     new_user = User(
         username=username,
@@ -1376,7 +1380,7 @@ def add_family_member():
     )
     db.session.add(new_user)
     db.session.commit()
-    
+
     flash(f"New family member '{username}' added successfully", "success")
     return redirect(url_for("settings"))
 
@@ -1385,31 +1389,31 @@ def add_family_member():
 def edit_family_member(user_id):
     # Get the user to edit
     member = User.query.get_or_404(user_id)
-    
+
     # Ensure the user belongs to the same family
     if member.family_id != current_user.family_id:
         flash("You don't have permission to edit this user", "danger")
         return redirect(url_for("settings"))
-    
+
     username = request.form.get(f"username_{user_id}")
     new_password = request.form.get(f"password_{user_id}")
-    
+
     # Validate input
     if not username:
         flash("Username is required", "danger")
         return redirect(url_for("settings"))
-    
+
     # Check if username already exists and belongs to another user
     existing_user = User.query.filter_by(username=username).first()
     if existing_user and existing_user.id != user_id:
         flash(f"Username '{username}' already exists", "danger")
         return redirect(url_for("settings"))
-    
+
     # Update the user
     member.username = username
     if new_password:
         member.password_hash = generate_password_hash(new_password)
-    
+
     db.session.commit()
     flash(f"Family member updated successfully", "success")
     return redirect(url_for("settings"))
@@ -1419,24 +1423,24 @@ def edit_family_member(user_id):
 def delete_family_member(user_id):
     # Get the user to delete
     member = User.query.get_or_404(user_id)
-    
+
     # Ensure the user belongs to the same family
     if member.family_id != current_user.family_id:
         flash("You don't have permission to delete this user", "danger")
         return redirect(url_for("settings"))
-    
+
     # Don't allow deleting the last parent
     if member.role == "parent":
         parent_count = User.query.filter_by(family_id=current_user.family_id, role="parent").count()
         if parent_count <= 1:
             flash("Cannot delete the last parent account", "danger")
             return redirect(url_for("settings"))
-    
+
     # Don't allow self-deletion
     if member.id == current_user.id:
         flash("You cannot delete your own account", "danger")
         return redirect(url_for("settings"))
-    
+
     # Delete the user
     db.session.delete(member)
     db.session.commit()
@@ -1451,17 +1455,17 @@ def daily_streaks():
     user = current_user
     family = user.family
     is_parent = user.role == "parent"
-    
+
     # Get all daily chores
     daily_chores = DailyChore.query.filter_by(is_active=True).all()
-    
+
     # Get all children in the family
     children = User.query.filter_by(family_id=family.id, role="child").all()
-    
+
     # Calculate streaks for each child and chore
     streak_data = {}
     today = datetime.date.today()
-    
+
     for child in children:
         streak_data[child.id] = {}
         for chore in daily_chores:
@@ -1470,21 +1474,21 @@ def daily_streaks():
                 user_id=child.id,
                 daily_chore_id=chore.id
             ).order_by(DailyChoreCompletion.date.desc()).first()
-            
+
             if latest_completion:
                 # Calculate current streak
                 streak = calculate_streak_for_user_chore(child.id, chore.id, latest_completion.date)
-                
+
                 # Check if completed today
                 completed_today = DailyChoreCompletion.query.filter_by(
                     user_id=child.id,
                     daily_chore_id=chore.id,
                     date=today
                 ).first() is not None
-                
+
                 # Calculate current earnings rate
                 earnings, bonus = calculate_streak_earnings(chore, streak)
-                
+
                 streak_data[child.id][chore.id] = {
                     'streak': streak,
                     'completed_today': completed_today,
@@ -1503,11 +1507,11 @@ def daily_streaks():
                     'potential_bonus': 0.0,
                     'can_complete': True
                 }
-    
+
     # Load streak bonuses configuration
     config = load_daily_chores_config()
     streak_bonuses = config.get('streak_bonuses', [])
-    
+
     return render_template('daily_streaks.html', 
                          daily_chores=daily_chores,
                          children=children,
@@ -1523,14 +1527,14 @@ def complete_daily_chore(chore_id):
     from models import DailyChore, DailyChoreCompletion
     user = current_user
     is_parent = user.role == "parent"
-    
+
     # Get the daily chore
     daily_chore = DailyChore.query.get_or_404(chore_id)
-    
+
     # Get completion date and child
     completion_date_str = request.form.get("completion_date")
     child_id = request.form.get("child_id")
-    
+
     if completion_date_str:
         try:
             completion_date = datetime.datetime.strptime(completion_date_str, "%Y-%m-%d").date()
@@ -1538,7 +1542,7 @@ def complete_daily_chore(chore_id):
             completion_date = datetime.date.today()
     else:
         completion_date = datetime.date.today()
-    
+
     # Determine which child is completing the chore
     if is_parent and child_id:
         child = User.query.get_or_404(child_id)
@@ -1547,24 +1551,24 @@ def complete_daily_chore(chore_id):
             return redirect(url_for("daily_streaks"))
     else:
         child = user
-    
+
     # Check if already completed today
     existing_completion = DailyChoreCompletion.query.filter_by(
         daily_chore_id=chore_id,
         user_id=child.id,
         date=completion_date
     ).first()
-    
+
     if existing_completion:
         flash(f"'{daily_chore.name}' has already been completed today for {child.username}", "warning")
         return redirect(url_for("daily_streaks"))
-    
+
     # Calculate current streak
     streak = calculate_streak_for_user_chore(child.id, chore_id, completion_date)
-    
+
     # Calculate earnings
     earnings, bonus = calculate_streak_earnings(daily_chore, streak)
-    
+
     # Create completion record
     completion = DailyChoreCompletion(
         daily_chore_id=chore_id,
@@ -1575,16 +1579,16 @@ def complete_daily_chore(chore_id):
         current_streak=streak,
         streak_bonus_earned=bonus
     )
-    
+
     db.session.add(completion)
     db.session.commit()
-    
+
     # Create success message
     message = f"'{daily_chore.name}' completed! Earned ${earnings:.2f}"
     if bonus > 0:
         message += f" + ${bonus:.2f} streak bonus"
     message += f" (Streak: {streak} days)"
-    
+
     flash(message, "success")
     return redirect(url_for("daily_streaks"))
 
