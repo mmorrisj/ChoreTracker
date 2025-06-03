@@ -470,14 +470,16 @@ def dashboard():
     for goal in family_goal_records:
         # Calculate effective current amount accounting for resets
         effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
+        
+        # Update the goal's current_amount in the database
         goal.current_amount = effective_current_amount
 
-        goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+        goal_progress = (effective_current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         family_goals.append({
             "id": goal.id,
             "name": goal.name,
             "progress": goal_progress,
-            "current_amount": goal.current_amount,
+            "current_amount": effective_current_amount,
             "amount": goal.amount
         })
 
@@ -810,16 +812,17 @@ def goals():
     for goal in family_goal_records:
         # Calculate the effective current amount (total earnings minus any reset amount)
         effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
+        
+        # Update the goal's current_amount in the database
         goal.current_amount = effective_current_amount
-        db.session.commit()
 
-        goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
+        goal_progress = (effective_current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         goal_data = {
             "id": goal.id,
             "name": goal.name,
             "description": goal.description,
             "amount": goal.amount,
-            "current_amount": goal.current_amount,
+            "current_amount": effective_current_amount,
             "progress": goal_progress
         }
         family_goals.append(goal_data)
@@ -938,8 +941,7 @@ def reset_goal(goal_id):
         return redirect(url_for("goals"))
 
     if goal.is_family_goal:
-        # For family goals, set reset_amount to current total family earnings
-        # This effectively resets the displayed progress to $0
+        # For family goals, calculate current total family earnings
         family_children = User.query.filter_by(
             family_id=goal.family_id,
             role="child"
@@ -952,8 +954,8 @@ def reset_goal(goal_id):
         # Set reset_amount to current total earnings so effective amount becomes 0
         goal.reset_amount = total_family_earnings
         
-        # Update current_amount to reflect the reset
-        goal.current_amount = max(0, total_family_earnings - goal.reset_amount)
+        # Force current_amount to 0
+        goal.current_amount = 0.0
     else:
         # For individual goals, just reset current amount
         goal.current_amount = 0.0
