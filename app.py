@@ -939,6 +939,7 @@ def reset_goal(goal_id):
 
     if goal.is_family_goal:
         # For family goals, set reset_amount to current total family earnings
+        # This effectively resets the displayed progress to $0
         family_children = User.query.filter_by(
             family_id=goal.family_id,
             role="child"
@@ -948,15 +949,18 @@ def reset_goal(goal_id):
         for child in family_children:
             total_family_earnings += calculate_child_earnings(child.id)
 
+        # Set reset_amount to current total earnings so effective amount becomes 0
         goal.reset_amount = total_family_earnings
-        goal.current_amount = 0.0
+        
+        # Update current_amount to reflect the reset
+        goal.current_amount = max(0, total_family_earnings - goal.reset_amount)
     else:
         # For individual goals, just reset current amount
         goal.current_amount = 0.0
 
     db.session.commit()
 
-    flash(f"Goal '{goal.name}' progress has been reset to $0.00", "success")
+    flash(f"Goal '{goal.name}' funds have been reset to $0.00", "success")
     return redirect(url_for("goals"))
 
 @app.route("/goals/<int:goal_id>/contribute", methods=["POST"])

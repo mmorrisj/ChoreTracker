@@ -196,7 +196,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const form = modal.querySelector('#resetGoalForm');
                 
                 if (goalNameElement) goalNameElement.textContent = goalName;
-                if (form) form.action = `/goals/${goalId}/reset`;
+                if (form) {
+                    // Set the correct action URL
+                    form.action = `/goals/${goalId}/reset`;
+                }
                 
                 // Show the modal
                 const bsModal = new bootstrap.Modal(modal);
