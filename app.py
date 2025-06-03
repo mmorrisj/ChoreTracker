@@ -468,14 +468,7 @@ def dashboard():
         total_family_earnings += calculate_child_earnings(child.id)
 
     for goal in family_goal_records:
-        # Calculate effective current amount accounting for resets
-        effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
-        
-        # Only update current_amount if it's different from what's stored
-        # This prevents overriding intentional resets
-        if abs(goal.current_amount - effective_current_amount) > 0.01:  # Allow for small floating point differences
-            goal.current_amount = effective_current_amount
-
+        # Use the stored current_amount directly - don't recalculate if it was manually set/reset
         goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         family_goals.append({
             "id": goal.id,
@@ -812,14 +805,7 @@ def goals():
         total_family_earnings += calculate_child_earnings(child.id)
 
     for goal in family_goal_records:
-        # Calculate the effective current amount (total earnings minus any reset amount)
-        effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
-        
-        # Only update current_amount if it's different from what's stored
-        # This prevents overriding intentional resets
-        if abs(goal.current_amount - effective_current_amount) > 0.01:  # Allow for small floating point differences
-            goal.current_amount = effective_current_amount
-
+        # Use the stored current_amount directly - don't recalculate if it was manually set/reset
         goal_progress = (goal.current_amount / goal.amount) * 100 if goal.amount > 0 else 0
         goal_data = {
             "id": goal.id,
@@ -944,37 +930,9 @@ def reset_goal(goal_id):
         flash("You don't have permission to reset this goal", "danger")
         return redirect(url_for("goals"))
 
-    if goal.is_family_goal:
-        # For family goals, calculate current total family earnings
-        family_children = User.query.filter_by(
-            family_id=goal.family_id,
-            role="child"
-        ).all()
-
-        total_family_earnings = 0
-        for child in family_children:
-            total_family_earnings += calculate_child_earnings(child.id)
-
-        # Set reset_amount to current total earnings so effective amount becomes 0
-        goal.reset_amount = total_family_earnings
-        
-        # Force current_amount to 0 - this ensures the displayed amount is 0
-        goal.current_amount = 0.0
-        
-        # Commit immediately to ensure the reset is saved
-        db.session.commit()
-        
-        # Verify the reset worked by recalculating
-        effective_current_amount = max(0, total_family_earnings - goal.reset_amount)
-        if effective_current_amount != 0:
-            # If there's still an amount showing, force it to 0
-            goal.current_amount = 0.0
-            goal.reset_amount = total_family_earnings
-            db.session.commit()
-    else:
-        # For individual goals, just reset current amount
-        goal.current_amount = 0.0
-        db.session.commit()
+    # Reset both family and individual goals the same way
+    goal.current_amount = 0.0
+    db.session.commit()
 
     flash(f"Goal '{goal.name}' funds have been reset to $0.00", "success")
     return redirect(url_for("goals"))
