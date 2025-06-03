@@ -904,8 +904,7 @@ def edit_goal(goal_id):
 
     # Ensure current amount doesn't exceed the goal amount
     if goal.current_amount > goal.amount:
-        goal.current_amount =```python
- goal.amount
+        goal.current_amount = goal.amount
 
     db.session.commit()
     flash("Goal updated successfully", "success")
