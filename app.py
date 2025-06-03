@@ -732,27 +732,34 @@ def complete_chore(chore_id):
     else:
         completion_date = datetime.date.today()
 
-    # Get child_id from form - could be from hidden input or from the select dropdown
-    child_id = request.form.get("child_id")
+    # Get child_id from form - prioritize dropdown selection over hidden input
     child_id_select = request.form.get("child_id_select")
-
-    # Use the dropdown selection value if it exists (for unassigned chores)
-    if child_id_select:
+    child_id_hidden = request.form.get("child_id")
+    
+    # Determine the actual child_id
+    if child_id_select and child_id_select.strip():
+        # Use dropdown selection (for unassigned chores or parent overrides)
         child_id = child_id_select
+    elif child_id_hidden and child_id_hidden.strip():
+        # Use hidden input (for assigned chores)
+        child_id = child_id_hidden
+    elif chore.assigned_to:
+        # Fall back to chore's assigned user
+        child_id = chore.assigned_to
+    elif not is_parent:
+        # Fall back to current user if they're a child
+        child_id = user.id
+    else:
+        flash("No child specified for completion", "danger")
+        return redirect(url_for("chores"))
 
-    # If still no child_id, use the chore's assigned user or current user if they're a child
-    if not child_id:
-        if chore.assigned_to:
-            child_id = chore.assigned_to
-        elif not is_parent:
-            child_id = user.id
-        else:
-            flash("No child specified for completion", "danger")
-            return redirect(url_for("chores"))
-
-    # Ensure child_id is an integer
+    # Ensure child_id is an integer and validate it's a real user
     try:
         child_id = int(child_id)
+        child_user = User.query.get(child_id)
+        if not child_user or child_user.family_id != user.family_id or child_user.role != "child":
+            flash("Invalid child selection", "danger")
+            return redirect(url_for("chores"))
     except (ValueError, TypeError):
         flash("Invalid child selection", "danger")
         return redirect(url_for("chores"))
