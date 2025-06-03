@@ -332,6 +332,28 @@ def calculate_child_earnings(child_id):
 
     return total_earnings
 
+def update_family_goals(family_id):
+    """Update current_amount for all family goals based on total family earnings"""
+    # Get all children in the family
+    family_children = User.query.filter_by(
+        family_id=family_id,
+        role="child"
+    ).all()
+
+    # Calculate total family earnings
+    total_family_earnings = 0
+    for child in family_children:
+        total_family_earnings += calculate_child_earnings(child.id)
+
+    # Update all family goals for this family
+    family_goals = Goal.query.filter_by(
+        family_id=family_id,
+        is_family_goal=True
+    ).all()
+
+    for goal in family_goals:
+        goal.current_amount = total_family_earnings
+
 # Authentication check
 def login_required(f):
     def decorated_function(*args, **kwargs):
@@ -738,6 +760,10 @@ def complete_chore(chore_id):
     )
 
     db.session.add(completion)
+    
+    # Update family goals with new earnings
+    update_family_goals(user.family_id)
+    
     db.session.commit()
 
     flash(f"Chore completed! Earned ${amount_earned:.2f}", "success")
@@ -1103,6 +1129,10 @@ def add_behavior():
     )
 
     db.session.add(new_record)
+    
+    # Update family goals with new earnings/deductions
+    update_family_goals(family_id)
+    
     db.session.commit()
 
     action = "awarded to" if behavior_type == "positive" else "deducted from"
@@ -1139,6 +1169,9 @@ def edit_behavior(record_id):
 
     record.is_positive = (behavior_type == "positive")
 
+    # Update family goals with changed earnings
+    update_family_goals(current_user.family_id)
+    
     db.session.commit()
     flash("Behavior record updated successfully", "success")
     return redirect(url_for("behavior"))
@@ -1154,6 +1187,10 @@ def delete_behavior(record_id):
         return redirect(url_for("behavior"))
 
     db.session.delete(record)
+    
+    # Update family goals after deletion
+    update_family_goals(current_user.family_id)
+    
     db.session.commit()
     flash("Behavior record deleted successfully", "success")
     return redirect(url_for("behavior"))
