@@ -300,7 +300,7 @@
                     
                     <div class="mb-3">
                         <label for="completionDate" class="form-label">Completion Date</label>
-                        <input type="date" class="form-control" id="completionDate" name="completion_date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                        <input type="date" class="form-control" id="completionDate" name="completion_date" value="{{ today().strftime('%Y-%m-%d') }}" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -470,7 +470,7 @@
                     
                     <div class="mb-3">
                         <label for="childCompletionDate" class="form-label">When did you complete it?</label>
-                        <input type="date" class="form-control" id="childCompletionDate" name="completion_date" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                        <input type="date" class="form-control" id="childCompletionDate" name="completion_date" value="{{ today().strftime('%Y-%m-%d') }}" required>
                     </div>
                     
                     <div class="alert alert-info">
