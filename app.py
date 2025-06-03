@@ -740,9 +740,22 @@ def complete_chore(chore_id):
     if child_id_select:
         child_id = child_id_select
 
-    # If still no child_id, fallback to current user (if child) or assigned user
+    # If still no child_id, use the chore's assigned user or current user if they're a child
     if not child_id:
-        child_id = user.id if not is_parent else chore.assigned_to
+        if chore.assigned_to:
+            child_id = chore.assigned_to
+        elif not is_parent:
+            child_id = user.id
+        else:
+            flash("No child specified for completion", "danger")
+            return redirect(url_for("chores"))
+
+    # Ensure child_id is an integer
+    try:
+        child_id = int(child_id)
+    except (ValueError, TypeError):
+        flash("Invalid child selection", "danger")
+        return redirect(url_for("chores"))
 
     # Calculate earnings based on the hourly rate
     family = user.family
