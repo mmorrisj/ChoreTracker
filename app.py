@@ -315,12 +315,20 @@ def inject_utilities():
 
 # Helper function to calculate earnings
 def calculate_child_earnings(child_id):
+    """Calculate total earnings for a child from all sources"""
+    from models import ChoreCompletion, BehaviorRecord, DailyChoreCompletion
     total_earnings = 0
 
-    # Add earnings from chores
+    # Add earnings from regular chores
     completions = ChoreCompletion.query.filter_by(user_id=child_id).all()
     for completion in completions:
         total_earnings += completion.amount_earned
+
+    # Add earnings from daily streak chores
+    daily_completions = DailyChoreCompletion.query.filter_by(user_id=child_id).all()
+    for completion in daily_completions:
+        total_earnings += completion.amount_earned
+        total_earnings += completion.streak_bonus_earned
 
     # Add earnings from behavior (positive and negative)
     behaviors = BehaviorRecord.query.filter_by(user_id=child_id).all()
@@ -334,6 +342,7 @@ def calculate_child_earnings(child_id):
 
 def update_family_goals(family_id):
     """Update current_amount for all family goals based on total family earnings"""
+    from models import User, Goal
     # Get all children in the family
     family_children = User.query.filter_by(
         family_id=family_id,
@@ -353,6 +362,23 @@ def update_family_goals(family_id):
 
     for goal in family_goals:
         goal.current_amount = total_family_earnings
+    
+    db.session.commit()
+
+def update_individual_goals(user_id):
+    """Update current_amount for individual goals based on child's earnings"""
+    from models import Goal
+    child_earnings = calculate_child_earnings(user_id)
+    
+    individual_goals = Goal.query.filter_by(
+        user_id=user_id,
+        is_family_goal=False
+    ).all()
+    
+    for goal in individual_goals:
+        goal.current_amount = child_earnings
+    
+    db.session.commit()
 
 # Authentication check
 def login_required(f):
@@ -780,11 +806,13 @@ def complete_chore(chore_id):
     )
 
     db.session.add(completion)
+    db.session.commit()
+    
+    # Update individual goals for the child
+    update_individual_goals(child_id)
     
     # Update family goals with new earnings
     update_family_goals(user.family_id)
-    
-    db.session.commit()
 
     flash(f"Chore completed! Earned ${amount_earned:.2f}", "success")
     return redirect(url_for("dashboard"))
@@ -1149,11 +1177,13 @@ def add_behavior():
     )
 
     db.session.add(new_record)
+    db.session.commit()
+    
+    # Update individual goals for the child
+    update_individual_goals(int(user_id))
     
     # Update family goals with new earnings/deductions
     update_family_goals(family_id)
-    
-    db.session.commit()
 
     action = "awarded to" if behavior_type == "positive" else "deducted from"
     flash(f"${amount:.2f} {action} {child.username} for {description}", "success")
@@ -1616,6 +1646,12 @@ def complete_daily_chore(chore_id):
 
     db.session.add(completion)
     db.session.commit()
+
+    # Update individual goals for the child
+    update_individual_goals(child.id)
+    
+    # Update family goals with new earnings
+    update_family_goals(child.family_id)
 
     # Create success message
     message = f"'{daily_chore.name}' completed! Earned ${earnings:.2f}"
