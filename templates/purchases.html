@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+
+{% block title %}Purchases{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">
+            <i class="fas fa-shopping-cart me-2"></i>Purchases
+        </h1>
+        <p class="text-muted">
+            Track purchases and spending from earnings
+        </p>
+    </div>
+</div>
+
+{% if is_parent %}
+<div class="row mb-4">
+    <div class="col">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPurchaseModal">
+            <i class="fas fa-plus me-1"></i>Record Purchase
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark">
+                <h5 class="mb-0">Purchase History</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if purchases %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Item</th>
+                                {% if is_parent %}<th>Child</th>{% endif %}
+                                <th>Amount</th>
+                                <th>Type</th>
+                                {% if is_parent %}<th>Description</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for purchase in purchases %}
+                            <tr>
+                                <td>{{ purchase.date.strftime('%m/%d/%Y') }}</td>
+                                <td>
+                                    <strong>{{ purchase.item_name }}</strong>
+                                    {% if purchase.goal %}
+                                    <span class="badge bg-success ms-1">Goal</span>
+                                    {% endif %}
+                                </td>
+                                {% if is_parent %}
+                                <td>{{ purchase.user.username }}</td>
+                                {% endif %}
+                                <td class="text-danger">-${{ "%.2f"|format(purchase.amount) }}</td>
+                                <td>
+                                    {% if purchase.goal %}
+                                    <span class="badge bg-success">Goal Purchase</span>
+                                    {% else %}
+                                    <span class="badge bg-info">Manual Purchase</span>
+                                    {% endif %}
+                                </td>
+                                {% if is_parent %}
+                                <td class="text-muted small">{{ purchase.description or "No description" }}</td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No purchases recorded</h5>
+                    <p class="text-muted">{% if is_parent %}Record purchases to track spending{% else %}Purchases will appear here when recorded by parents{% endif %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_parent %}
+<!-- Add Purchase Modal -->
+<div class="modal fade" id="addPurchaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Record Purchase</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_purchase') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="child" class="form-label">Child</label>
+                        <select class="form-select" id="child" name="user_id" required>
+                            <option value="">Select a child</option>
+                            {% for child in children %}
+                            <option value="{{ child.id }}">{{ child.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="itemName" class="form-label">Item Name</label>
+                        <input type="text" class="form-control" id="itemName" name="item_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="amount" name="amount" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="purchaseDate" class="form-label">Purchase Date</label>
+                        <input type="date" class="form-control" id="purchaseDate" name="purchase_date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="2" placeholder="Additional details about the purchase"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Record Purchase</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

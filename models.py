@@ -116,6 +116,27 @@ class BehaviorRecord(db.Model):
     user = db.relationship('User', back_populates='behavior_records')
 
 
+class Purchase(db.Model):
+    """
+    Represents a purchase made by a child using their earnings.
+    """
+    __tablename__ = 'purchases'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    goal_id = db.Column(db.Integer, db.ForeignKey('goals.id'), nullable=True)  # Optional: if linked to a goal
+    date = db.Column(db.Date, default=datetime.date.today)
+    item_name = db.Column(db.String(200), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.Text)
+    
+    # Relationships
+    family = db.relationship('Family', foreign_keys=[family_id])
+    user = db.relationship('User', foreign_keys=[user_id])
+    goal = db.relationship('Goal', foreign_keys=[goal_id])
+
+
 class DailyChore(db.Model):
     """
     Represents a daily chore configuration from the config file.

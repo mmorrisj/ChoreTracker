@@ -316,7 +316,7 @@ def inject_utilities():
 # Helper function to calculate earnings
 def calculate_child_earnings(child_id):
     """Calculate total earnings for a child from all sources"""
-    from models import ChoreCompletion, BehaviorRecord, DailyChoreCompletion
+    from models import ChoreCompletion, BehaviorRecord, DailyChoreCompletion, Purchase
     total_earnings = 0
 
     # Add earnings from regular chores
@@ -337,6 +337,11 @@ def calculate_child_earnings(child_id):
             total_earnings += behavior.amount
         else:
             total_earnings -= behavior.amount
+
+    # Subtract purchases
+    purchases = Purchase.query.filter_by(user_id=child_id).all()
+    for purchase in purchases:
+        total_earnings -= purchase.amount
 
     return total_earnings
 
@@ -1694,6 +1699,147 @@ def complete_daily_chore(chore_id):
 
     flash(message, "success")
     return redirect(url_for("daily_streaks"))
+
+@app.route("/purchases")
+@login_required
+def purchases():
+    user = current_user
+    family = user.family
+    is_parent = user.role == "parent"
+    
+    # Get all family children for parent view
+    children = []
+    if is_parent:
+        children = User.query.filter_by(family_id=family.id, role="child").all()
+    
+    # Import Purchase model
+    from models import Purchase
+    
+    # Get purchases for the family
+    if is_parent:
+        purchases = Purchase.query.filter_by(family_id=family.id).order_by(Purchase.date.desc()).all()
+    else:
+        purchases = Purchase.query.filter_by(family_id=family.id, user_id=user.id).order_by(Purchase.date.desc()).all()
+    
+    # Get individual goals for purchase linking
+    individual_goals = Goal.query.filter_by(family_id=family.id, is_family_goal=False).all()
+    
+    return render_template(
+        "purchases.html",
+        user=user,
+        family=family,
+        is_parent=is_parent,
+        children=children,
+        purchases=purchases,
+        individual_goals=individual_goals
+    )
+
+@app.route("/purchases/add", methods=["POST"])
+@parent_required
+def add_purchase():
+    from models import Purchase
+    user = current_user
+    family_id = user.family_id
+    
+    item_name = request.form.get("item_name")
+    amount = request.form.get("amount", 0, type=float)
+    user_id = request.form.get("user_id")
+    purchase_date = request.form.get("purchase_date")
+    description = request.form.get("description", "")
+    
+    if not item_name:
+        flash("Item name is required", "danger")
+        return redirect(url_for("purchases"))
+    
+    if amount <= 0:
+        flash("Amount must be greater than zero", "danger")
+        return redirect(url_for("purchases"))
+    
+    if not user_id:
+        flash("Child must be selected", "danger")
+        return redirect(url_for("purchases"))
+    
+    # Convert date string to date object
+    try:
+        date_obj = datetime.datetime.strptime(purchase_date, "%Y-%m-%d").date()
+    except ValueError:
+        date_obj = datetime.date.today()
+    
+    # Verify child belongs to family
+    child = User.query.get(user_id)
+    if not child or child.family_id != family_id or child.role != "child":
+        flash("Invalid child selection", "danger")
+        return redirect(url_for("purchases"))
+    
+    # Create purchase record
+    purchase = Purchase(
+        family_id=family_id,
+        user_id=int(user_id),
+        date=date_obj,
+        item_name=item_name,
+        amount=amount,
+        description=description
+    )
+    
+    db.session.add(purchase)
+    db.session.commit()
+    
+    # Update individual goals for the child
+    update_individual_goals(int(user_id))
+    
+    # Update family goals
+    update_family_goals(family_id)
+    
+    flash(f"Purchase '{item_name}' recorded for {child.username} - ${amount:.2f}", "success")
+    return redirect(url_for("purchases"))
+
+@app.route("/goals/<int:goal_id>/purchase", methods=["POST"])
+@parent_required
+def purchase_goal(goal_id):
+    goal = Goal.query.get_or_404(goal_id)
+    
+    # Check if goal belongs to user's family
+    if goal.family_id != current_user.family_id:
+        flash("You don't have permission to purchase this goal", "danger")
+        return redirect(url_for("goals"))
+    
+    # Only individual goals can be purchased
+    if goal.is_family_goal:
+        flash("Family goals cannot be purchased directly", "danger")
+        return redirect(url_for("goals"))
+    
+    # Check if child has enough funds
+    child_earnings = calculate_child_earnings(goal.user_id)
+    if child_earnings < goal.amount:
+        flash(f"Insufficient funds. {goal.user.username} has ${child_earnings:.2f} but needs ${goal.amount:.2f}", "danger")
+        return redirect(url_for("goals"))
+    
+    # Create purchase record for the goal
+    purchase = Purchase(
+        family_id=goal.family_id,
+        user_id=goal.user_id,
+        goal_id=goal.id,
+        date=datetime.date.today(),
+        item_name=goal.name,
+        amount=goal.amount,
+        description=f"Goal purchase: {goal.description}" if goal.description else f"Goal purchase: {goal.name}"
+    )
+    
+    db.session.add(purchase)
+    
+    # Mark goal as completed by resetting it
+    goal.current_amount = 0.0
+    
+    db.session.commit()
+    
+    # Update individual goals for the child
+    update_individual_goals(goal.user_id)
+    
+    # Update family goals
+    update_family_goals(goal.family_id)
+    
+    flash(f"Goal '{goal.name}' purchased for {goal.user.username}! ${goal.amount:.2f} deducted.", "success")
+    return redirect(url_for("goals"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
