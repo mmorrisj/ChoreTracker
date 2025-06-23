@@ -183,11 +183,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Handle reset goal buttons
-    const resetGoalButtons = document.querySelectorAll('.btn-reset-goal');
-    resetGoalButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const goalId = this.dataset.goalId;
-            const goalName = this.dataset.goalName;
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-reset-goal')) {
+            const button = e.target.closest('.btn-reset-goal');
+            const goalId = button.dataset.goalId;
+            const goalName = button.dataset.goalName;
+            
+            console.log('Reset button clicked for goal:', goalId, goalName);
             
             // Update the modal
             const modal = document.getElementById('resetGoalModal');
@@ -201,13 +203,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.action = `/goals/${goalId}/reset`;
                     // Ensure the form has the required method
                     form.method = 'POST';
+                    console.log('Form action set to:', form.action);
                 }
                 
                 // Show the modal
                 const bsModal = new bootstrap.Modal(modal);
                 bsModal.show();
+            } else {
+                console.error('Reset modal not found');
             }
-        });
+        }
     });
     
     // Toggle between individual and family goals in add goal modal
