@@ -950,6 +950,20 @@ def add_goal():
         is_family_goal=(goal_type == "family")
     )
 
+    # For family goals, set reset baseline to current total earnings so it starts from zero
+    if goal_type == "family":
+        from models import User
+        family_children = User.query.filter_by(
+            family_id=family_id,
+            role="child"
+        ).all()
+        
+        total_family_earnings = 0
+        for child in family_children:
+            total_family_earnings += calculate_child_earnings(child.id)
+        
+        new_goal.reset_amount = total_family_earnings
+
     db.session.add(new_goal)
     db.session.commit()
 
