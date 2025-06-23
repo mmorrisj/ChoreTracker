@@ -191,27 +191,42 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Reset button clicked for goal:', goalId, goalName);
             
-            // Update the modal
-            const modal = document.getElementById('resetGoalModal');
-            if (modal) {
-                const goalNameElement = modal.querySelector('#resetGoalNamePlaceholder');
-                const form = modal.querySelector('#resetGoalForm');
+            // Wait for DOM to be ready, then find modal
+            setTimeout(() => {
+                const modal = document.getElementById('resetGoalModal');
+                console.log('Looking for modal:', modal);
                 
-                if (goalNameElement) goalNameElement.textContent = goalName;
-                if (form) {
-                    // Set the correct action URL
-                    form.action = `/goals/${goalId}/reset`;
-                    // Ensure the form has the required method
-                    form.method = 'POST';
-                    console.log('Form action set to:', form.action);
+                if (modal) {
+                    const goalNameElement = modal.querySelector('#resetGoalNamePlaceholder');
+                    const form = modal.querySelector('#resetGoalForm');
+                    
+                    if (goalNameElement) goalNameElement.textContent = goalName;
+                    if (form) {
+                        // Set the correct action URL
+                        form.action = `/goals/${goalId}/reset`;
+                        // Ensure the form has the required method
+                        form.method = 'POST';
+                        console.log('Form action set to:', form.action);
+                    }
+                    
+                    // Show the modal
+                    const bsModal = new bootstrap.Modal(modal);
+                    bsModal.show();
+                } else {
+                    console.error('Reset modal not found in DOM');
+                    console.log('Available modals:', document.querySelectorAll('.modal'));
+                    
+                    // Fallback: direct confirmation
+                    if (confirm(`Are you sure you want to reset the funds for "${goalName}"? This will set the current amount back to $0.00.`)) {
+                        // Create a temporary form and submit it
+                        const tempForm = document.createElement('form');
+                        tempForm.method = 'POST';
+                        tempForm.action = `/goals/${goalId}/reset`;
+                        document.body.appendChild(tempForm);
+                        tempForm.submit();
+                    }
                 }
-                
-                // Show the modal
-                const bsModal = new bootstrap.Modal(modal);
-                bsModal.show();
-            } else {
-                console.error('Reset modal not found');
-            }
+            }, 100);
         }
     });
     
