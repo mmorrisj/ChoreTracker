@@ -118,6 +118,22 @@
                                                                        name="password_{{ member.id }}" placeholder="Leave blank to keep current password">
                                                                 <div class="form-text">Only enter a password if you want to change it.</div>
                                                             </div>
+                                                            {% if member.role == 'child' %}
+                                                            <div class="mb-3">
+                                                                <label for="total_earnings_{{ member.id }}" class="form-label">Total Earnings Adjustment</label>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-text">$</span>
+                                                                    <input type="number" step="0.01" class="form-control" id="total_earnings_{{ member.id }}" 
+                                                                           name="total_earnings_{{ member.id }}" 
+                                                                           value="{{ calculate_child_earnings(member.id) }}"
+                                                                           placeholder="0.00">
+                                                                </div>
+                                                                <div class="form-text text-warning">
+                                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                                    This will manually set the total earnings. Current: ${{ "%.2f"|format(calculate_child_earnings(member.id)) }}
+                                                                </div>
+                                                            </div>
+                                                            {% endif %}
                                                         </div>
                                                         <div class="modal-footer">
                                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

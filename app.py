@@ -1499,6 +1499,7 @@ def edit_family_member(user_id):
 
     username = request.form.get(f"username_{user_id}")
     new_password = request.form.get(f"password_{user_id}")
+    total_earnings = request.form.get(f"total_earnings_{user_id}")
 
     # Validate input
     if not username:
@@ -1515,6 +1516,36 @@ def edit_family_member(user_id):
     member.username = username
     if new_password:
         member.password_hash = generate_password_hash(new_password)
+
+    # Handle earnings adjustment for children
+    if member.role == 'child' and total_earnings:
+        try:
+            new_total = float(total_earnings)
+            current_total = calculate_child_earnings(member.id)
+            adjustment = new_total - current_total
+            
+            if abs(adjustment) > 0.01:  # Only create record if there's a meaningful change
+                # Create a behavior record to track this parent action
+                behavior_record = BehaviorRecord(
+                    family_id=current_user.family_id,
+                    user_id=member.id,
+                    date=datetime.date.today(),
+                    description=f"Parent Action: Total earnings adjusted from ${current_total:.2f} to ${new_total:.2f} by {current_user.username}",
+                    amount=adjustment,
+                    is_positive=adjustment > 0
+                )
+                db.session.add(behavior_record)
+                
+                # Update individual goals for this child
+                update_individual_goals(member.id)
+                
+                # Update family goals
+                update_family_goals(current_user.family_id)
+                
+                flash(f"Earnings adjusted by ${adjustment:+.2f} for {member.username}", "info")
+        except ValueError:
+            flash("Invalid earnings amount", "danger")
+            return redirect(url_for("settings"))
 
     db.session.commit()
     flash(f"Family member updated successfully", "success")
