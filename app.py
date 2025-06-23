@@ -1796,6 +1796,7 @@ def add_purchase():
 @app.route("/goals/<int:goal_id>/purchase", methods=["POST"])
 @parent_required
 def purchase_goal(goal_id):
+    from models import Purchase
     goal = Goal.query.get_or_404(goal_id)
     
     # Check if goal belongs to user's family
