@@ -169,6 +169,35 @@
         </div>
     </div>
     {% endif %}
+
+    {% if is_parent %}
+    <!-- Daily Chore Management Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog me-2"></i>Daily Chore Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="text-muted">Daily chores are synced from the <code>daily_chores_config.json</code> file. When chores are removed from the config, they are automatically deactivated to preserve completion history.</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <form action="{{ url_for('cleanup_daily_chores') }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete all inactive daily chores and their completion records? This action cannot be undone.')">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-trash-alt me-1"></i>Clean Up Inactive Chores
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Complete Daily Chore Modal -->

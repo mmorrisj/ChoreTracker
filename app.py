@@ -53,7 +53,11 @@ def sync_daily_chores_from_config():
     from models import DailyChore
     config = load_daily_chores_config()
 
+    # Get list of chore names from config
+    config_chore_names = set()
     for chore_config in config.get('daily_chores', []):
+        config_chore_names.add(chore_config['name'])
+        
         existing_chore = DailyChore.query.filter_by(name=chore_config['name']).first()
 
         if existing_chore:
@@ -63,6 +67,7 @@ def sync_daily_chores_from_config():
             existing_chore.max_amount = chore_config['max_amount']
             existing_chore.streak_increment = chore_config['streak_increment']
             existing_chore.streak_threshold = chore_config['streak_threshold']
+            existing_chore.is_active = True  # Ensure it's active if it's in config
         else:
             # Create new chore
             new_chore = DailyChore(
@@ -71,9 +76,18 @@ def sync_daily_chores_from_config():
                 base_amount=chore_config['base_amount'],
                 max_amount=chore_config['max_amount'],
                 streak_increment=chore_config['streak_increment'],
-                streak_threshold=chore_config['streak_threshold']
+                streak_threshold=chore_config['streak_threshold'],
+                is_active=True
             )
             db.session.add(new_chore)
+
+    # Remove or deactivate chores that are no longer in config
+    db_chores = DailyChore.query.filter_by(is_active=True).all()
+    for db_chore in db_chores:
+        if db_chore.name not in config_chore_names:
+            # Set as inactive instead of deleting to preserve completion history
+            db_chore.is_active = False
+            logging.info(f"Deactivated daily chore '{db_chore.name}' - no longer in config")
 
     db.session.commit()
 
@@ -386,6 +400,23 @@ def update_individual_goals(user_id):
         goal.current_amount = child_earnings
     
     db.session.commit()
+
+def cleanup_inactive_daily_chores():
+    """Permanently delete inactive daily chores and their completion records"""
+    from models import DailyChore, DailyChoreCompletion
+    
+    inactive_chores = DailyChore.query.filter_by(is_active=False).all()
+    
+    for chore in inactive_chores:
+        # Delete all completion records for this chore
+        DailyChoreCompletion.query.filter_by(daily_chore_id=chore.id).delete()
+        
+        # Delete the chore itself
+        db.session.delete(chore)
+        logging.info(f"Permanently deleted inactive daily chore '{chore.name}' and its completion records")
+    
+    db.session.commit()
+    return len(inactive_chores)
 
 # Authentication check
 def login_required(f):
@@ -1824,6 +1855,19 @@ def add_purchase():
     
     flash(f"Purchase '{item_name}' recorded for {child.username} - ${amount:.2f}", "success")
     return redirect(url_for("purchases"))
+
+@app.route("/daily-chores/cleanup", methods=["POST"])
+@parent_required
+def cleanup_daily_chores():
+    """Clean up inactive daily chores"""
+    deleted_count = cleanup_inactive_daily_chores()
+    
+    if deleted_count > 0:
+        flash(f"Cleaned up {deleted_count} inactive daily chore(s)", "success")
+    else:
+        flash("No inactive daily chores to clean up", "info")
+    
+    return redirect(url_for("daily_streaks"))
 
 @app.route("/goals/<int:goal_id>/purchase", methods=["POST"])
 @parent_required
