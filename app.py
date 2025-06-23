@@ -1531,8 +1531,8 @@ def edit_family_member(user_id):
                     family_id=current_user.family_id,
                     user_id=member.id,
                     date=datetime.date.today(),
-                    description=f"Parent Action: Total earnings adjusted from ${current_total:.2f} to ${new_total:.2f} by {current_user.username}",
-                    amount=adjustment,
+                    description=f"Parent Action: Total earnings set to ${new_total:.2f} (was ${current_total:.2f}) by {current_user.username}",
+                    amount=abs(adjustment),
                     is_positive=adjustment > 0
                 )
                 db.session.add(behavior_record)
@@ -1543,7 +1543,7 @@ def edit_family_member(user_id):
                 # Update family goals
                 update_family_goals(current_user.family_id)
                 
-                flash(f"Earnings adjusted by ${adjustment:+.2f} for {member.username}", "info")
+                flash(f"Total earnings set to ${new_total:.2f} for {member.username} (adjustment: ${adjustment:+.2f})", "info")
         except ValueError:
             flash("Invalid earnings amount", "danger")
             return redirect(url_for("settings"))
