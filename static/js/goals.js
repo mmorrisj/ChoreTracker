@@ -199,6 +199,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (form) {
                     // Set the correct action URL
                     form.action = `/goals/${goalId}/reset`;
+                    // Ensure the form has the required method
+                    form.method = 'POST';
                 }
                 
                 // Show the modal

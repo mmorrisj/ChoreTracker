@@ -130,6 +130,37 @@
     <!-- FullCalendar JS (for calendar page) -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.js"></script>
     
+    <!-- Global scripts -->
+    <script>
+        // Set today's date as default for all date inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (!input.value) {
+                    input.value = today;
+                }
+            });
+            
+            // Also set for dynamically added date inputs
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) {
+                            const newDateInputs = node.querySelectorAll ? node.querySelectorAll('input[type="date"]') : [];
+                            newDateInputs.forEach(input => {
+                                if (!input.value) {
+                                    input.value = today;
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>
