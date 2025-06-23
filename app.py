@@ -310,7 +310,8 @@ def inject_utilities():
     return {
         'datetime': datetime,
         'now': datetime.datetime.now,
-        'today': datetime.date.today
+        'today': datetime.date.today,
+        'calculate_child_earnings': calculate_child_earnings
     }
 
 # Helper function to calculate earnings
