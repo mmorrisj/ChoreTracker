@@ -341,7 +341,7 @@ def calculate_child_earnings(child_id):
     return total_earnings
 
 def update_family_goals(family_id):
-    """Update current_amount for all family goals based on total family earnings"""
+    """Update current_amount for all family goals based on total family earnings since reset"""
     from models import User, Goal
     # Get all children in the family
     family_children = User.query.filter_by(
@@ -361,7 +361,8 @@ def update_family_goals(family_id):
     ).all()
 
     for goal in family_goals:
-        goal.current_amount = total_family_earnings
+        # Use total earnings minus the reset baseline for this specific goal
+        goal.current_amount = max(0, total_family_earnings - goal.reset_amount)
     
     db.session.commit()
 
@@ -1004,11 +1005,29 @@ def reset_goal(goal_id):
         flash("You don't have permission to reset this goal", "danger")
         return redirect(url_for("goals"))
 
-    # Reset both family and individual goals the same way
-    goal.current_amount = 0.0
+    if goal.is_family_goal:
+        # For family goals, set the reset baseline to current total family earnings
+        # This allows each family goal to have independent progress tracking
+        from models import User
+        family_children = User.query.filter_by(
+            family_id=goal.family_id,
+            role="child"
+        ).all()
+        
+        total_family_earnings = 0
+        for child in family_children:
+            total_family_earnings += calculate_child_earnings(child.id)
+        
+        goal.reset_amount = total_family_earnings
+        goal.current_amount = 0.0
+        
+        flash(f"Family goal '{goal.name}' progress has been reset to $0.00", "success")
+    else:
+        # For individual goals, reset normally
+        goal.current_amount = 0.0
+        flash(f"Goal '{goal.name}' funds have been reset to $0.00", "success")
+    
     db.session.commit()
-
-    flash(f"Goal '{goal.name}' funds have been reset to $0.00", "success")
     return redirect(url_for("goals"))
 
 @app.route("/goals/<int:goal_id>/contribute", methods=["POST"])
