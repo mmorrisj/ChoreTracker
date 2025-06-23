@@ -1,7 +1,7 @@
 {
   "daily_chores": [
     {
-      "name": "Make Your Bed",
+      "name": "Morning Checklist",
       "description": "Make your bed every morning before starting the day",
       "base_amount": 0.25,
       "max_amount": 2.00,
@@ -9,42 +9,58 @@
       "streak_threshold": 5
     },
     {
-      "name": "Brush Teeth (Morning)",
+      "name": "Instrument Practice (20 Min)",
       "description": "Brush your teeth every morning",
       "base_amount": 0.25,
-      "max_amount": 1.50,
+      "max_amount": 2.00,
       "streak_increment": 0.25,
       "streak_threshold": 5
     },
     {
-      "name": "Brush Teeth (Evening)",
-      "description": "Brush your teeth every evening before bed",
+      "name": "Spiritual Task (5-10 min)",
+      "description": "Read scriptures, come follow me, prayer journal",
       "base_amount": 0.25,
-      "max_amount": 1.50,
+      "max_amount": 1.00,
       "streak_increment": 0.25,
       "streak_threshold": 5
     },
     {
-      "name": "Put Dirty Clothes in Hamper",
-      "description": "Put all dirty clothes in the laundry hamper",
+      "name": "Creative Task",
+      "description": "Artistic/Crafting",
       "base_amount": 0.25,
       "max_amount": 1.00,
       "streak_increment": 0.15,
       "streak_threshold": 5
     },
     {
-      "name": "Clear Your Dishes",
-      "description": "Clear your dishes from the table after eating",
+      "name": "Reading or Writing (20 min)",
+      "description": "Read or write for 20 minutes",
       "base_amount": 0.25,
-      "max_amount": 1.25,
-      "streak_increment": 0.20,
+      "max_amount": 2.00,
+      "streak_increment": 0.25,
       "streak_threshold": 5
     },
     {
-      "name": "Pack School Backpack",
-      "description": "Pack your backpack with homework and supplies for school",
-      "base_amount": 0.30,
-      "max_amount": 1.75,
+      "name": "Household Chore",
+      "description": "Empty Dishwasher, tidy bedroom, tidy basement...",
+      "base_amount": 0.25,
+      "max_amount": 2.00,
+      "streak_increment": 0.25,
+      "streak_threshold": 5
+    },
+    {
+      "name": "After Dinner Chores",
+      "description": "Plates put away, dining room tidy, toys put away",
+      "base_amount": 0.25,
+      "max_amount": 2.00,
+      "streak_increment": 0.25,
+      "streak_threshold": 5
+    },
+    {
+      "name": "Bed Time Checklist",
+      "description": "Pajamas, Teeth Brushed, Shower when asked, Prayers",
+      "base_amount": 0.25,
+      "max_amount": 2.00,
       "streak_increment": 0.25,
       "streak_threshold": 5
     }
