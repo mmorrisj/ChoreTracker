@@ -120,4 +120,4 @@ cat backup.sql | docker compose exec -T db psql -U chorechamp chorechamp
 - Backend: Python/Flask
 - Database: PostgreSQL
 - Frontend: Bootstrap CSS and Vanilla JavaScript
-- Containerization: Docker & Docker Compose
+- Containerization: Docker & Docker Compose# ChoreTracker
