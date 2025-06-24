@@ -1586,6 +1586,8 @@ def edit_family_member(user_id):
 @app.route("/settings/family/delete/<int:user_id>", methods=["POST"])
 @parent_required
 def delete_family_member(user_id):
+    from models import Purchase, DailyChoreCompletion
+    
     # Get the user to delete
     member = User.query.get_or_404(user_id)
 
@@ -1606,10 +1608,36 @@ def delete_family_member(user_id):
         flash("You cannot delete your own account", "danger")
         return redirect(url_for("settings"))
 
+    # Delete related records first to avoid foreign key constraints
+    
+    # Delete purchases
+    Purchase.query.filter_by(user_id=member.id).delete()
+    
+    # Delete daily chore completions
+    DailyChoreCompletion.query.filter_by(user_id=member.id).delete()
+    
+    # Delete behavior records
+    BehaviorRecord.query.filter_by(user_id=member.id).delete()
+    
+    # Delete chore completions
+    ChoreCompletion.query.filter_by(user_id=member.id).delete()
+    
+    # Delete individual goals (not family goals)
+    Goal.query.filter_by(user_id=member.id, is_family_goal=False).delete()
+    
+    # Unassign any chores assigned to this user
+    assigned_chores = Chore.query.filter_by(assigned_to=member.id).all()
+    for chore in assigned_chores:
+        chore.assigned_to = None
+    
     # Delete the user
     db.session.delete(member)
     db.session.commit()
-    flash(f"Family member deleted successfully", "success")
+    
+    # Update family goals after deletion
+    update_family_goals(current_user.family_id)
+    
+    flash(f"Family member '{member.username}' deleted successfully", "success")
     return redirect(url_for("settings"))
 
 @app.route("/daily-streaks")
